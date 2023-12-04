@@ -69,6 +69,44 @@
       <div class="outer">
         <section id="main">
   
+    <article id="post-linux查问题常用的命令" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+  <div class="article-meta">
+    <a href="/2023/12/04/linux%E6%9F%A5%E9%97%AE%E9%A2%98%E5%B8%B8%E7%94%A8%E7%9A%84%E5%91%BD%E4%BB%A4/" class="article-date">
+  <time class="dt-published" datetime="2023-12-04T11:32:21.000Z" itemprop="datePublished">2023-12-04</time>
+</a>
+    
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="p-name article-title" href="/2023/12/04/linux%E6%9F%A5%E9%97%AE%E9%A2%98%E5%B8%B8%E7%94%A8%E7%9A%84%E5%91%BD%E4%BB%A4/">linux查问题常用的命令</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="e-content article-entry" itemprop="articleBody">
+      
+        
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://example.com/2023/12/04/linux%E6%9F%A5%E9%97%AE%E9%A2%98%E5%B8%B8%E7%94%A8%E7%9A%84%E5%91%BD%E4%BB%A4/" data-id="clpqw8qsc0000fftbbu2uflwk" data-title="linux查问题常用的命令" class="article-share-link"><span class="fa fa-share">Share</span></a>
+      
+      
+      
+    </footer>
+  </div>
+  
+</article>
+
+
+
+  
     <article id="post-Pika-分布式集群详解" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
   <div class="article-meta">
     <a href="/2023/12/04/Pika-%E5%88%86%E5%B8%83%E5%BC%8F%E9%9B%86%E7%BE%A4%E8%AF%A6%E8%A7%A3/" class="article-date">
@@ -93,7 +131,7 @@
       
         <h3 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h3><p>pika3.5.0版本发布了分布式集群方案，基于codis+pika-server实现，已经在360内部搜索团队线上使用，稳定性和性能都非常优秀。本文主要介绍分布式集群的架构和部署方案。</p>
 <h3 id="分布式架构解析"><a href="#分布式架构解析" class="headerlink" title="分布式架构解析"></a>分布式架构解析</h3><p>pika分布式集群基于codis架构进行改造设计，架构图如下所示：</p>
-<p><img src="https://cdn.nlark.com/yuque/0/2023/png/35415924/1693882498176-f273d76c-db13-4a2d-b3be-ce67525ed842.png" alt="img"></p>
+<p><img src="/../images/cluster/%E5%88%86%E5%B8%83%E5%BC%8F%E9%9B%86%E7%BE%A4%E6%9E%B6%E6%9E%84.png" alt="分布式集群架构图"></p>
 <p>pika分布式集群主要 由以下这些组件组成：</p>
 <ul>
 <li><p><strong>Pika Server</strong>：pika3.5.0版本，与单机版模式及架构保持一致。</p>
@@ -162,10 +200,9 @@
 <p>2.建立pika主从关系<br>3.启动codis etcd<br>4.启动codis dashboard<br>5.启动codis. proxy<br>6.启动codis fe<br>7 绑定pika+codis</p>
 <p>绑定codis+pika需要在dashboard中进行操作，操作顺序如下：</p>
 <p>1.添加group(注意：pika1主一从为一个group)</p>
-<p><img src="https://cdn.nlark.com/yuque/0/2023/png/35415924/1693891599664-86b3c265-a645-4307-aa55-348420e73dfe.png" alt="img"></p>
+<p><img src="/../images/cluster/%E6%B7%BB%E5%8A%A0group.png" alt="添加group"></p>
 <p>2.添加pikaserver</p>
-<p><img src="https://cdn.nlark.com/yuque/0/2023/png/35415924/1693891630131-be30472d-ff17-4c1c-b753-90c9c1dfe9e0.png" alt="img"></p>
-<p>3.分配slots:</p>
+<p><img src="/../images/cluster/%E6%B7%BB%E5%8A%A0Pikaserver.png" alt="添加Pikaserver"><br>3.分配slots:</p>
 <p><img src="https://cdn.nlark.com/yuque/0/2023/png/35415924/1693891665708-5878a3f1-5ee7-4753-82e1-741e36a2a9ae.png" alt="img"></p>
 <p>至此，pika和codis已经绑定完毕，我们可以用proxy的vip vport进行访问。</p>
 <h2 id="快速启动脚本"><a href="#快速启动脚本" class="headerlink" title="快速启动脚本"></a>快速启动脚本</h2><p>pika-codis源码(路径:)中 admin 文件夹提供了一系列脚本以便快速启动、停止各个组件，提高运维效率。</p>
@@ -224,57 +261,6 @@
 
 
   
-    <article id="post-hello-world" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
-  <div class="article-meta">
-    <a href="/2023/12/04/hello-world/" class="article-date">
-  <time class="dt-published" datetime="2023-12-04T10:08:14.583Z" itemprop="datePublished">2023-12-04</time>
-</a>
-    
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="p-name article-title" href="/2023/12/04/hello-world/">Hello World</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="e-content article-entry" itemprop="articleBody">
-      
-        <p>Welcome to <a target="_blank" rel="noopener" href="https://hexo.io/">Hexo</a>! This is your very first post. Check <a target="_blank" rel="noopener" href="https://hexo.io/docs/">documentation</a> for more info. If you get any problems when using Hexo, you can find the answer in <a target="_blank" rel="noopener" href="https://hexo.io/docs/troubleshooting.html">troubleshooting</a> or you can ask me on <a target="_blank" rel="noopener" href="https://github.com/hexojs/hexo/issues">GitHub</a>.</p>
-<h2 id="Quick-Start"><a href="#Quick-Start" class="headerlink" title="Quick Start"></a>Quick Start</h2><h3 id="Create-a-new-post"><a href="#Create-a-new-post" class="headerlink" title="Create a new post"></a>Create a new post</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo new <span class="string">&quot;My New Post&quot;</span></span><br></pre></td></tr></table></figure>
-
-<p>More info: <a target="_blank" rel="noopener" href="https://hexo.io/docs/writing.html">Writing</a></p>
-<h3 id="Run-server"><a href="#Run-server" class="headerlink" title="Run server"></a>Run server</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo server</span><br></pre></td></tr></table></figure>
-
-<p>More info: <a target="_blank" rel="noopener" href="https://hexo.io/docs/server.html">Server</a></p>
-<h3 id="Generate-static-files"><a href="#Generate-static-files" class="headerlink" title="Generate static files"></a>Generate static files</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo generate</span><br></pre></td></tr></table></figure>
-
-<p>More info: <a target="_blank" rel="noopener" href="https://hexo.io/docs/generating.html">Generating</a></p>
-<h3 id="Deploy-to-remote-sites"><a href="#Deploy-to-remote-sites" class="headerlink" title="Deploy to remote sites"></a>Deploy to remote sites</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo deploy</span><br></pre></td></tr></table></figure>
-
-<p>More info: <a target="_blank" rel="noopener" href="https://hexo.io/docs/one-command-deployment.html">Deployment</a></p>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://example.com/2023/12/04/hello-world/" data-id="clpqr1id90000uutb3fvmgpdv" data-title="Hello World" class="article-share-link"><span class="fa fa-share">Share</span></a>
-      
-      
-      
-    </footer>
-  </div>
-  
-</article>
-
-
-
-  
 
 
 </section>
@@ -306,11 +292,11 @@
       <ul>
         
           <li>
-            <a href="/2023/12/04/Pika-%E5%88%86%E5%B8%83%E5%BC%8F%E9%9B%86%E7%BE%A4%E8%AF%A6%E8%A7%A3/">Pika 分布式集群详解</a>
+            <a href="/2023/12/04/linux%E6%9F%A5%E9%97%AE%E9%A2%98%E5%B8%B8%E7%94%A8%E7%9A%84%E5%91%BD%E4%BB%A4/">linux查问题常用的命令</a>
           </li>
         
           <li>
-            <a href="/2023/12/04/hello-world/">Hello World</a>
+            <a href="/2023/12/04/Pika-%E5%88%86%E5%B8%83%E5%BC%8F%E9%9B%86%E7%BE%A4%E8%AF%A6%E8%A7%A3/">Pika 分布式集群详解</a>
           </li>
         
       </ul>

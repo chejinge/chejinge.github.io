@@ -13,17 +13,17 @@
 <meta property="og:site_name" content="Hexo">
 <meta property="og:description" content="概述pika3.5.0版本发布了分布式集群方案，基于codis+pika-server实现，已经在360内部搜索团队线上使用，稳定性和性能都非常优秀。本文主要介绍分布式集群的架构和部署方案。 分布式架构解析pika分布式集群基于codis架构进行改造设计，架构图如下所示：  pika分布式集群主要 由以下这些组件组成：  Pika Server：pika3.5.0版本，与单机版模式及架构保持一致。">
 <meta property="og:locale" content="en_US">
-<meta property="og:image" content="https://cdn.nlark.com/yuque/0/2023/png/35415924/1693882498176-f273d76c-db13-4a2d-b3be-ce67525ed842.png">
-<meta property="og:image" content="https://cdn.nlark.com/yuque/0/2023/png/35415924/1693891599664-86b3c265-a645-4307-aa55-348420e73dfe.png">
-<meta property="og:image" content="https://cdn.nlark.com/yuque/0/2023/png/35415924/1693891630131-be30472d-ff17-4c1c-b753-90c9c1dfe9e0.png">
+<meta property="og:image" content="http://example.com/images/cluster/%E5%88%86%E5%B8%83%E5%BC%8F%E9%9B%86%E7%BE%A4%E6%9E%B6%E6%9E%84.png">
+<meta property="og:image" content="http://example.com/images/cluster/%E6%B7%BB%E5%8A%A0group.png">
+<meta property="og:image" content="http://example.com/images/cluster/%E6%B7%BB%E5%8A%A0Pikaserver.png">
 <meta property="og:image" content="https://cdn.nlark.com/yuque/0/2023/png/35415924/1693891665708-5878a3f1-5ee7-4753-82e1-741e36a2a9ae.png">
 <meta property="og:image" content="https://cdn.nlark.com/yuque/0/2023/png/35415924/1693893928049-6bbf0f3c-2bd6-4fb1-9c67-1f69a5566c06.png">
 <meta property="og:image" content="https://cdn.nlark.com/yuque/0/2023/png/35415924/1693894428597-c338175a-a978-4faf-b9d1-a31b52eb8de4.png">
 <meta property="article:published_time" content="2023-12-04T10:12:56.000Z">
-<meta property="article:modified_time" content="2023-12-04T11:20:11.600Z">
+<meta property="article:modified_time" content="2023-12-04T12:34:10.151Z">
 <meta property="article:author" content="John Doe">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:image" content="https://cdn.nlark.com/yuque/0/2023/png/35415924/1693882498176-f273d76c-db13-4a2d-b3be-ce67525ed842.png">
+<meta name="twitter:image" content="http://example.com/images/cluster/%E5%88%86%E5%B8%83%E5%BC%8F%E9%9B%86%E7%BE%A4%E6%9E%B6%E6%9E%84.png">
   
     <link rel="alternate" href="/atom.xml" title="Hexo" type="application/atom+xml">
   
@@ -102,7 +102,7 @@
       
         <h3 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h3><p>pika3.5.0版本发布了分布式集群方案，基于codis+pika-server实现，已经在360内部搜索团队线上使用，稳定性和性能都非常优秀。本文主要介绍分布式集群的架构和部署方案。</p>
 <h3 id="分布式架构解析"><a href="#分布式架构解析" class="headerlink" title="分布式架构解析"></a>分布式架构解析</h3><p>pika分布式集群基于codis架构进行改造设计，架构图如下所示：</p>
-<p><img src="https://cdn.nlark.com/yuque/0/2023/png/35415924/1693882498176-f273d76c-db13-4a2d-b3be-ce67525ed842.png" alt="img"></p>
+<p><img src="/../images/cluster/%E5%88%86%E5%B8%83%E5%BC%8F%E9%9B%86%E7%BE%A4%E6%9E%B6%E6%9E%84.png" alt="分布式集群架构图"></p>
 <p>pika分布式集群主要 由以下这些组件组成：</p>
 <ul>
 <li><p><strong>Pika Server</strong>：pika3.5.0版本，与单机版模式及架构保持一致。</p>
@@ -171,10 +171,9 @@
 <p>2.建立pika主从关系<br>3.启动codis etcd<br>4.启动codis dashboard<br>5.启动codis. proxy<br>6.启动codis fe<br>7 绑定pika+codis</p>
 <p>绑定codis+pika需要在dashboard中进行操作，操作顺序如下：</p>
 <p>1.添加group(注意：pika1主一从为一个group)</p>
-<p><img src="https://cdn.nlark.com/yuque/0/2023/png/35415924/1693891599664-86b3c265-a645-4307-aa55-348420e73dfe.png" alt="img"></p>
+<p><img src="/../images/cluster/%E6%B7%BB%E5%8A%A0group.png" alt="添加group"></p>
 <p>2.添加pikaserver</p>
-<p><img src="https://cdn.nlark.com/yuque/0/2023/png/35415924/1693891630131-be30472d-ff17-4c1c-b753-90c9c1dfe9e0.png" alt="img"></p>
-<p>3.分配slots:</p>
+<p><img src="/../images/cluster/%E6%B7%BB%E5%8A%A0Pikaserver.png" alt="添加Pikaserver"><br>3.分配slots:</p>
 <p><img src="https://cdn.nlark.com/yuque/0/2023/png/35415924/1693891665708-5878a3f1-5ee7-4753-82e1-741e36a2a9ae.png" alt="img"></p>
 <p>至此，pika和codis已经绑定完毕，我们可以用proxy的vip vport进行访问。</p>
 <h2 id="快速启动脚本"><a href="#快速启动脚本" class="headerlink" title="快速启动脚本"></a>快速启动脚本</h2><p>pika-codis源码(路径:)中 admin 文件夹提供了一系列脚本以便快速启动、停止各个组件，提高运维效率。</p>
@@ -231,11 +230,15 @@
     
 <nav id="article-nav">
   
-  
-    <a href="/2023/12/04/hello-world/" id="article-nav-older" class="article-nav-link-wrap">
-      <strong class="article-nav-caption">Older</strong>
-      <div class="article-nav-title">Hello World</div>
+    <a href="/2023/12/04/linux%E6%9F%A5%E9%97%AE%E9%A2%98%E5%B8%B8%E7%94%A8%E7%9A%84%E5%91%BD%E4%BB%A4/" id="article-nav-newer" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Newer</strong>
+      <div class="article-nav-title">
+        
+          linux查问题常用的命令
+        
+      </div>
     </a>
+  
   
 </nav>
 
@@ -272,11 +275,11 @@
       <ul>
         
           <li>
-            <a href="/2023/12/04/Pika-%E5%88%86%E5%B8%83%E5%BC%8F%E9%9B%86%E7%BE%A4%E8%AF%A6%E8%A7%A3/">Pika 分布式集群详解</a>
+            <a href="/2023/12/04/linux%E6%9F%A5%E9%97%AE%E9%A2%98%E5%B8%B8%E7%94%A8%E7%9A%84%E5%91%BD%E4%BB%A4/">linux查问题常用的命令</a>
           </li>
         
           <li>
-            <a href="/2023/12/04/hello-world/">Hello World</a>
+            <a href="/2023/12/04/Pika-%E5%88%86%E5%B8%83%E5%BC%8F%E9%9B%86%E7%BE%A4%E8%AF%A6%E8%A7%A3/">Pika 分布式集群详解</a>
           </li>
         
       </ul>
