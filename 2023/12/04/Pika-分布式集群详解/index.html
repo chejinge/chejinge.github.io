@@ -6,19 +6,24 @@
   
   <title>Pika 分布式集群详解 | Hexo</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-  <meta name="description" content="一级标题代码测试：&#96;&#96;&#96;pyprint(“Hello”)&#96;&#96;&#96; 注意：这里因为我放在md文件中的，所以加上了\，不解析&#96;&#96;&#96;，实际测试时请去掉\。 图片测试：  引用测试：  这是一条引用  二级标题无序列表测试：  哈哈 嘿嘿 吼吼  三级标题四级标题">
+  <meta name="description" content="概述pika3.5.0版本发布了分布式集群方案，基于codis+pika-server实现，已经在360内部搜索团队线上使用，稳定性和性能都非常优秀。本文主要介绍分布式集群的架构和部署方案。 分布式架构解析pika分布式集群基于codis架构进行改造设计，架构图如下所示：  pika分布式集群主要 由以下这些组件组成：  Pika Server：pika3.5.0版本，与单机版模式及架构保持一致。">
 <meta property="og:type" content="article">
 <meta property="og:title" content="Pika 分布式集群详解">
 <meta property="og:url" content="http://example.com/2023/12/04/Pika-%E5%88%86%E5%B8%83%E5%BC%8F%E9%9B%86%E7%BE%A4%E8%AF%A6%E8%A7%A3/index.html">
 <meta property="og:site_name" content="Hexo">
-<meta property="og:description" content="一级标题代码测试：&#96;&#96;&#96;pyprint(“Hello”)&#96;&#96;&#96; 注意：这里因为我放在md文件中的，所以加上了\，不解析&#96;&#96;&#96;，实际测试时请去掉\。 图片测试：  引用测试：  这是一条引用  二级标题无序列表测试：  哈哈 嘿嘿 吼吼  三级标题四级标题">
+<meta property="og:description" content="概述pika3.5.0版本发布了分布式集群方案，基于codis+pika-server实现，已经在360内部搜索团队线上使用，稳定性和性能都非常优秀。本文主要介绍分布式集群的架构和部署方案。 分布式架构解析pika分布式集群基于codis架构进行改造设计，架构图如下所示：  pika分布式集群主要 由以下这些组件组成：  Pika Server：pika3.5.0版本，与单机版模式及架构保持一致。">
 <meta property="og:locale" content="en_US">
-<meta property="og:image" content="http://mculover666.cn/blog/20191031/R4mWMXsrRKxu.png?imageslim">
+<meta property="og:image" content="https://cdn.nlark.com/yuque/0/2023/png/35415924/1693882498176-f273d76c-db13-4a2d-b3be-ce67525ed842.png">
+<meta property="og:image" content="https://cdn.nlark.com/yuque/0/2023/png/35415924/1693891599664-86b3c265-a645-4307-aa55-348420e73dfe.png">
+<meta property="og:image" content="https://cdn.nlark.com/yuque/0/2023/png/35415924/1693891630131-be30472d-ff17-4c1c-b753-90c9c1dfe9e0.png">
+<meta property="og:image" content="https://cdn.nlark.com/yuque/0/2023/png/35415924/1693891665708-5878a3f1-5ee7-4753-82e1-741e36a2a9ae.png">
+<meta property="og:image" content="https://cdn.nlark.com/yuque/0/2023/png/35415924/1693893928049-6bbf0f3c-2bd6-4fb1-9c67-1f69a5566c06.png">
+<meta property="og:image" content="https://cdn.nlark.com/yuque/0/2023/png/35415924/1693894428597-c338175a-a978-4faf-b9d1-a31b52eb8de4.png">
 <meta property="article:published_time" content="2023-12-04T10:12:56.000Z">
-<meta property="article:modified_time" content="2023-12-04T10:17:51.113Z">
+<meta property="article:modified_time" content="2023-12-04T11:20:11.600Z">
 <meta property="article:author" content="John Doe">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:image" content="http://mculover666.cn/blog/20191031/R4mWMXsrRKxu.png?imageslim">
+<meta name="twitter:image" content="https://cdn.nlark.com/yuque/0/2023/png/35415924/1693882498176-f273d76c-db13-4a2d-b3be-ce67525ed842.png">
   
     <link rel="alternate" href="/atom.xml" title="Hexo" type="application/atom+xml">
   
@@ -95,21 +100,124 @@
     
     <div class="e-content article-entry" itemprop="articleBody">
       
-        <h1 id="一级标题"><a href="#一级标题" class="headerlink" title="一级标题"></a>一级标题</h1><p>代码测试：<br>`&#96;&#96;py<br>print(“Hello”)<br>`&#96;&#96;</p>
-<p>注意：这里因为我放在md文件中的，所以加上了\，不解析&#96;&#96;&#96;，实际测试时请去掉\。</p>
-<p>图片测试：</p>
-<p><img src="http://mculover666.cn/blog/20191031/R4mWMXsrRKxu.png?imageslim"></p>
-<p>引用测试：</p>
-<blockquote>
-<p>这是一条引用</p>
-</blockquote>
-<h2 id="二级标题"><a href="#二级标题" class="headerlink" title="二级标题"></a>二级标题</h2><p>无序列表测试：</p>
+        <h3 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h3><p>pika3.5.0版本发布了分布式集群方案，基于codis+pika-server实现，已经在360内部搜索团队线上使用，稳定性和性能都非常优秀。本文主要介绍分布式集群的架构和部署方案。</p>
+<h3 id="分布式架构解析"><a href="#分布式架构解析" class="headerlink" title="分布式架构解析"></a>分布式架构解析</h3><p>pika分布式集群基于codis架构进行改造设计，架构图如下所示：</p>
+<p><img src="https://cdn.nlark.com/yuque/0/2023/png/35415924/1693882498176-f273d76c-db13-4a2d-b3be-ce67525ed842.png" alt="img"></p>
+<p>pika分布式集群主要 由以下这些组件组成：</p>
 <ul>
-<li>哈哈</li>
-<li>嘿嘿</li>
-<li>吼吼</li>
+<li><p><strong>Pika Server</strong>：pika3.5.0版本，与单机版模式及架构保持一致。</p>
+</li>
+<li><p><strong>Codis Proxy</strong>：客户端直接连接 codis-proxy，codis-proxy 手动用户请求后，会通过计算 hash 值将请求转发到指定的 Pika Server 去执行。</p>
+</li>
+<li><p>对于同一个业务集群而言，可以同时部署多个 codis-proxy 实例；</p>
+</li>
+<li><p>不同 codis-proxy 之间由 codis-dashboard 保证状态同步。</p>
+</li>
+<li><p><strong>Codis Dashboard</strong>：集群管理工具，支持 codis-proxy、pika-server 的添加、删除，以及据迁移等操作。在集群状态发生改变时，codis-dashboard 维护集群下所有 codis-proxy 的状态的一致性。</p>
+</li>
+<li><p>对于同一个业务集群而言，同一个时刻 codis-dashboard 只能有 0个或者1个；</p>
+</li>
+<li><p>所有对集群的修改都必须通过 codis-dashboard 完成。</p>
+</li>
+<li><p><strong>Codis FE</strong>：集群管理界面。</p>
+</li>
+<li><p>多个集群实例共享可以共享同一个前端展示页面；</p>
+</li>
+<li><p>通过配置文件管理后端 codis-dashboard 列表，配置文件可自动更新。</p>
+</li>
+<li><p><strong>Codis Etcd</strong>:</p>
+</li>
 </ul>
-<h3 id="三级标题"><a href="#三级标题" class="headerlink" title="三级标题"></a>三级标题</h3><h4 id="四级标题"><a href="#四级标题" class="headerlink" title="四级标题"></a>四级标题</h4>
+<p>​        codis-etcd主要用于记录元数据信息，为保证高可用，建议etcd部署为3节点。</p>
+<h3 id="Sentinel主从切换"><a href="#Sentinel主从切换" class="headerlink" title="Sentinel主从切换"></a>Sentinel主从切换</h3><p>   为了方便运维管理，本次版本支持sentinel自动主从切换，当集群主挂的时候会备升主，提供了主节点故障自愈的能力。</p>
+<h3 id="部署方式"><a href="#部署方式" class="headerlink" title="部署方式"></a>部署方式</h3><p>机器配置可以根据自身情况选择：</p>
+<p>搜索部门节点分配如下：</p>
+<table>
+<thead>
+<tr>
+<th>组件</th>
+<th>节点个数(可以根据需求调整)</th>
+<th>实例规格(可以根据需求调整)</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>pika server</strong></td>
+<td>12主12从</td>
+<td>每个实例：20核，32G内存，200G磁盘</td>
+</tr>
+<tr>
+<td><strong>Codis FE</strong></td>
+<td>1个节点</td>
+<td>1个节点 2核4G</td>
+</tr>
+<tr>
+<td><strong>Codis Dashboard</strong></td>
+<td>1个节点</td>
+<td>1个节点 2核4G</td>
+</tr>
+<tr>
+<td><strong>Codis Etcd</strong></td>
+<td>3个节点</td>
+<td>3个节点 2核4G</td>
+</tr>
+<tr>
+<td><strong>Codis Proxy</strong></td>
+<td>4个节点</td>
+<td>4个节点 2核4G</td>
+</tr>
+</tbody></table>
+<p>集群创建部署顺序：</p>
+<p>1.启动pika</p>
+<p>2.建立pika主从关系<br>3.启动codis etcd<br>4.启动codis dashboard<br>5.启动codis. proxy<br>6.启动codis fe<br>7 绑定pika+codis</p>
+<p>绑定codis+pika需要在dashboard中进行操作，操作顺序如下：</p>
+<p>1.添加group(注意：pika1主一从为一个group)</p>
+<p><img src="https://cdn.nlark.com/yuque/0/2023/png/35415924/1693891599664-86b3c265-a645-4307-aa55-348420e73dfe.png" alt="img"></p>
+<p>2.添加pikaserver</p>
+<p><img src="https://cdn.nlark.com/yuque/0/2023/png/35415924/1693891630131-be30472d-ff17-4c1c-b753-90c9c1dfe9e0.png" alt="img"></p>
+<p>3.分配slots:</p>
+<p><img src="https://cdn.nlark.com/yuque/0/2023/png/35415924/1693891665708-5878a3f1-5ee7-4753-82e1-741e36a2a9ae.png" alt="img"></p>
+<p>至此，pika和codis已经绑定完毕，我们可以用proxy的vip vport进行访问。</p>
+<h2 id="快速启动脚本"><a href="#快速启动脚本" class="headerlink" title="快速启动脚本"></a>快速启动脚本</h2><p>pika-codis源码(路径:)中 admin 文件夹提供了一系列脚本以便快速启动、停止各个组件，提高运维效率。</p>
+<h3 id="启动codis-dashboard"><a href="#启动codis-dashboard" class="headerlink" title="启动codis-dashboard"></a>启动codis-dashboard</h3><p>使用 codis-dashboard-admin.sh 脚本启动 dashboard，并查看 dashboard 日志确认启动是否有异常。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">./admin/codis-dashboard-admin.sh start</span><br><span class="line"> tail -100 ./log/codis-dashboard.log.2017-04-08</span><br></pre></td></tr></table></figure>
+
+
+
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">2017/04/08 15:16:57 fsclient.go:197: [INFO] fsclient - create /codis3/codis-demo/topom OK</span><br><span class="line">2017/04/08 15:16:57 main.go:140: [WARN] [0xc42025f7a0] dashboard is working ...</span><br><span class="line">2017/04/08 15:16:57 topom.go:424: [WARN] admin start service on [::]:18080</span><br></pre></td></tr></table></figure>
+
+<p>快速启动集群元数据存储使用 filesystem，默认数据路径保存在 &#x2F;tmp&#x2F;codis，若启动失败，请检查当前用户是否对该路径拥有读写权限。</p>
+<h3 id="启动codis-proxy"><a href="#启动codis-proxy" class="headerlink" title="启动codis-proxy"></a>启动codis-proxy</h3><p>使用 codis-proxy-admin.sh 脚本启动 codis-proxy，并查看 proxy 日志确认启动是否有异常。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">./admin/codis-proxy-admin.sh start</span><br><span class="line">tail -100 ./log/codis-proxy.log.2017-04-08</span><br></pre></td></tr></table></figure>
+
+
+
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">2017/04/08 15:39:37 proxy.go:293: [WARN] [0xc4200df760] set sentinels = []</span><br><span class="line">2017/04/08 15:39:37 main.go:320: [WARN] rpc online proxy seems OK</span><br><span class="line">2017/04/08 15:39:38 main.go:210: [WARN] [0xc4200df760] proxy is working ...</span><br></pre></td></tr></table></figure>
+
+<h3 id="启动codis-server"><a href="#启动codis-server" class="headerlink" title="启动codis-server"></a>启动codis-server</h3><p>使用 codis-server-admin.sh 脚本启动 codis-server，并查看 redis 日志确认启动是否有异常。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">./admin/codis-server-admin.sh start</span><br><span class="line">tail -100 /tmp/redis_6379.log</span><br></pre></td></tr></table></figure>
+
+
+
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">5706:M 08 Apr 16:04:11.748 * DB loaded from disk: 0.000 seconds</span><br><span class="line">5706:M 08 Apr 16:04:11.748 * The server is now ready to accept connections on port 6379</span><br></pre></td></tr></table></figure>
+
+<p>redis.conf 配置中 pidfile、logfile 默认保存在 &#x2F;tmp 目录，若启动失败，请检查当前用户是否有该目录的读写权限。</p>
+<h3 id="启动codis-fe"><a href="#启动codis-fe" class="headerlink" title="启动codis-fe"></a>启动codis-fe</h3><p>使用 codis-fe-admin.sh 脚本启动 codis-fe，并查看 fe 日志确认启动是否有异常。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">./admin/codis-fe-admin.sh start</span><br><span class="line">tail -100 ./log/codis-fe.log.2017-04-08</span><br></pre></td></tr></table></figure>
+
+
+
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">2017/04/08 16:12:13 main.go:100: [WARN] set ncpu = 1</span><br><span class="line">2017/04/08 16:12:13 main.go:103: [WARN] set listen = 0.0.0.0:9090</span><br><span class="line">2017/04/08 16:12:13 main.go:115: [WARN] set assets = /home/codis/go/src/github.com/CodisLabs/codis/admin/../bin/assets</span><br><span class="line">2017/04/08 16:12:13 main.go:153: [WARN] set --filesystem = /tmp/codis</span><br></pre></td></tr></table></figure>
+
+
+
+<h3 id="压测性能展示"><a href="#压测性能展示" class="headerlink" title="压测性能展示"></a>压测性能展示</h3><p>部署12个主12个从实例：</p>
+<p>集群qps:</p>
+<p><img src="https://cdn.nlark.com/yuque/0/2023/png/35415924/1693893928049-6bbf0f3c-2bd6-4fb1-9c67-1f69a5566c06.png" alt="img"></p>
+<p>读写耗时：</p>
+<p><img src="https://cdn.nlark.com/yuque/0/2023/png/35415924/1693894428597-c338175a-a978-4faf-b9d1-a31b52eb8de4.png" alt="img"></p>
+<p>参数性能调优：</p>
+<p>我们发现将thread_num调大，将thread_pool_size调小，会导致</p>
+
       
     </div>
     <footer class="article-footer">
