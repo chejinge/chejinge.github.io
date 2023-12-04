@@ -69,33 +69,35 @@
       <div class="outer">
         <section id="main">
   
-    <article id="post-linux查问题常用的命令" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+    <article id="post-linux常用的定位工具及命令" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
   <div class="article-meta">
-    <a href="/2023/12/04/linux%E6%9F%A5%E9%97%AE%E9%A2%98%E5%B8%B8%E7%94%A8%E7%9A%84%E5%91%BD%E4%BB%A4/" class="article-date">
-  <time class="dt-published" datetime="2023-12-04T11:32:21.000Z" itemprop="datePublished">2023-12-04</time>
+    <a href="/2023/12/04/linux%E5%B8%B8%E7%94%A8%E7%9A%84%E5%AE%9A%E4%BD%8D%E5%B7%A5%E5%85%B7%E5%8F%8A%E5%91%BD%E4%BB%A4/" class="article-date">
+  <time class="dt-published" datetime="2023-12-04T12:51:51.557Z" itemprop="datePublished">2023-12-04</time>
 </a>
     
   </div>
   <div class="article-inner">
     
     
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="p-name article-title" href="/2023/12/04/linux%E6%9F%A5%E9%97%AE%E9%A2%98%E5%B8%B8%E7%94%A8%E7%9A%84%E5%91%BD%E4%BB%A4/">linux查问题常用的命令</a>
-    </h1>
-  
-
-      </header>
-    
     <div class="e-content article-entry" itemprop="articleBody">
       
-        
+        <h2 id="Valgrind查看内存泄漏"><a href="#Valgrind查看内存泄漏" class="headerlink" title="Valgrind查看内存泄漏"></a>Valgrind查看内存泄漏</h2><h3 id="安装"><a href="#安装" class="headerlink" title="安装"></a>安装</h3><p><code>yum install valgrind</code></p>
+<h3 id="常用命令"><a href="#常用命令" class="headerlink" title="常用命令"></a>常用命令</h3><p><code>valgrind --leak-check=full --tool=memcheck --log-file=valgrind_output.txt /home/wuxianrong/pika1/pika/output/pika -c /home/wuxianrong/conf/pika9981.conf</code></p>
+<p><code>com</code>mand&#x3D;”valgrind –leak-check&#x3D;full –leak-resolution&#x3D;high “<code>     </code>command&#x3D;”${command} –log-file&#x3D;valgind_info –num-callers&#x3D;20 “<code>     </code>command&#x3D;”${command} –show-reachable&#x3D;yes –tool&#x3D;memcheck “<code>     </code>command&#x3D;”${command} –track-fds&#x3D;yes –track-origins&#x3D;yes “<code>     </code>command&#x3D;”${command} –trace-syscalls&#x3D;yes -v ${mltf}”<code>     </code>if [ “${dbg}” &#x3D;&#x3D; “v” ] ; then<code>       </code>echo “you should start the command &quot;gdb ${mltf}&quot; in another shell and then give gdb the command &quot;target remote | vgdb&quot;“<code>       </code>echo -e “\n”<code>       </code>command&#x3D;”valgrind –leak-check&#x3D;full –tool&#x3D;memcheck –trace-syscalls&#x3D;no –vgdb&#x3D;full –vgdb-error&#x3D;0 -v ${mltf}”<code>     fi</code></p>
+<h2 id="perf火焰图查看cpu过高问题"><a href="#perf火焰图查看cpu过高问题" class="headerlink" title="perf火焰图查看cpu过高问题"></a>perf火焰图查看cpu过高问题</h2><ol>
+<li>sudo perf record -F 99 -p 12356 –call-graph dwarf -g – sleep 60</li>
+</ol>
+<p>采样生成perf.data</p>
+<ol>
+<li>sudo perf script -i perf.data &amp;&gt; perf.unfold 生成折叠后的调用栈</li>
+<li>.&#x2F;stackcollapse-perf.pl perf.unfold &amp;&gt; perf.folded</li>
+<li>.&#x2F;flamegraph.pl perf.folded &gt; perf.svg</li>
+</ol>
+<h2 id="GDB调试"><a href="#GDB调试" class="headerlink" title="GDB调试"></a>GDB调试</h2>
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://example.com/2023/12/04/linux%E6%9F%A5%E9%97%AE%E9%A2%98%E5%B8%B8%E7%94%A8%E7%9A%84%E5%91%BD%E4%BB%A4/" data-id="clpqw8qsc0000fftbbu2uflwk" data-title="linux查问题常用的命令" class="article-share-link"><span class="fa fa-share">Share</span></a>
+      <a data-url="http://example.com/2023/12/04/linux%E5%B8%B8%E7%94%A8%E7%9A%84%E5%AE%9A%E4%BD%8D%E5%B7%A5%E5%85%B7%E5%8F%8A%E5%91%BD%E4%BB%A4/" data-id="clpqww17n0000fqtb1g0m4d5t" data-title="" class="article-share-link"><span class="fa fa-share">Share</span></a>
       
       
       
@@ -202,9 +204,8 @@
 <p>1.添加group(注意：pika1主一从为一个group)</p>
 <p><img src="/../images/cluster/%E6%B7%BB%E5%8A%A0group.png" alt="添加group"></p>
 <p>2.添加pikaserver</p>
-<p><img src="/../images/cluster/%E6%B7%BB%E5%8A%A0Pikaserver.png" alt="添加Pikaserver"><br>3.分配slots:</p>
-<p><img src="https://cdn.nlark.com/yuque/0/2023/png/35415924/1693891665708-5878a3f1-5ee7-4753-82e1-741e36a2a9ae.png" alt="img"></p>
-<p>至此，pika和codis已经绑定完毕，我们可以用proxy的vip vport进行访问。</p>
+<p><img src="/../images/cluster/%E6%B7%BB%E5%8A%A0pikaserver.png" alt="添加Pikaserver"><br>3.分配slots:</p>
+<p><img src="/../images/cluster/%E5%88%86%E9%85%8Dslots.png" alt="分配slots"><br>至此，pika和codis已经绑定完毕，我们可以用proxy的vip vport进行访问。</p>
 <h2 id="快速启动脚本"><a href="#快速启动脚本" class="headerlink" title="快速启动脚本"></a>快速启动脚本</h2><p>pika-codis源码(路径:)中 admin 文件夹提供了一系列脚本以便快速启动、停止各个组件，提高运维效率。</p>
 <h3 id="启动codis-dashboard"><a href="#启动codis-dashboard" class="headerlink" title="启动codis-dashboard"></a>启动codis-dashboard</h3><p>使用 codis-dashboard-admin.sh 脚本启动 dashboard，并查看 dashboard 日志确认启动是否有异常。</p>
 <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">./admin/codis-dashboard-admin.sh start</span><br><span class="line"> tail -100 ./log/codis-dashboard.log.2017-04-08</span><br></pre></td></tr></table></figure>
@@ -240,9 +241,9 @@
 
 <h3 id="压测性能展示"><a href="#压测性能展示" class="headerlink" title="压测性能展示"></a>压测性能展示</h3><p>部署12个主12个从实例：</p>
 <p>集群qps:</p>
-<p><img src="https://cdn.nlark.com/yuque/0/2023/png/35415924/1693893928049-6bbf0f3c-2bd6-4fb1-9c67-1f69a5566c06.png" alt="img"></p>
+<p><img src="/../images/cluster/%E5%8E%8B%E6%B5%8B%E6%80%A7%E8%83%BD%E5%B1%95%E7%A4%BA.png" alt="压测性能展示"></p>
 <p>读写耗时：</p>
-<p><img src="https://cdn.nlark.com/yuque/0/2023/png/35415924/1693894428597-c338175a-a978-4faf-b9d1-a31b52eb8de4.png" alt="img"></p>
+<p><img src="/../images/cluster/%E8%AF%BB%E5%86%99%E8%80%97%E6%97%B6.png" alt="读写耗时">)</p>
 <p>参数性能调优：</p>
 <p>我们发现将thread_num调大，将thread_pool_size调小，会导致</p>
 
@@ -292,7 +293,7 @@
       <ul>
         
           <li>
-            <a href="/2023/12/04/linux%E6%9F%A5%E9%97%AE%E9%A2%98%E5%B8%B8%E7%94%A8%E7%9A%84%E5%91%BD%E4%BB%A4/">linux查问题常用的命令</a>
+            <a href="/2023/12/04/linux%E5%B8%B8%E7%94%A8%E7%9A%84%E5%AE%9A%E4%BD%8D%E5%B7%A5%E5%85%B7%E5%8F%8A%E5%91%BD%E4%BB%A4/">(no title)</a>
           </li>
         
           <li>

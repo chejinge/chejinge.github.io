@@ -15,12 +15,12 @@
 <meta property="og:locale" content="en_US">
 <meta property="og:image" content="http://example.com/images/cluster/%E5%88%86%E5%B8%83%E5%BC%8F%E9%9B%86%E7%BE%A4%E6%9E%B6%E6%9E%84.png">
 <meta property="og:image" content="http://example.com/images/cluster/%E6%B7%BB%E5%8A%A0group.png">
-<meta property="og:image" content="http://example.com/images/cluster/%E6%B7%BB%E5%8A%A0Pikaserver.png">
-<meta property="og:image" content="https://cdn.nlark.com/yuque/0/2023/png/35415924/1693891665708-5878a3f1-5ee7-4753-82e1-741e36a2a9ae.png">
-<meta property="og:image" content="https://cdn.nlark.com/yuque/0/2023/png/35415924/1693893928049-6bbf0f3c-2bd6-4fb1-9c67-1f69a5566c06.png">
-<meta property="og:image" content="https://cdn.nlark.com/yuque/0/2023/png/35415924/1693894428597-c338175a-a978-4faf-b9d1-a31b52eb8de4.png">
+<meta property="og:image" content="http://example.com/images/cluster/%E6%B7%BB%E5%8A%A0pikaserver.png">
+<meta property="og:image" content="http://example.com/images/cluster/%E5%88%86%E9%85%8Dslots.png">
+<meta property="og:image" content="http://example.com/images/cluster/%E5%8E%8B%E6%B5%8B%E6%80%A7%E8%83%BD%E5%B1%95%E7%A4%BA.png">
+<meta property="og:image" content="http://example.com/images/cluster/%E8%AF%BB%E5%86%99%E8%80%97%E6%97%B6.png">
 <meta property="article:published_time" content="2023-12-04T10:12:56.000Z">
-<meta property="article:modified_time" content="2023-12-04T12:34:10.151Z">
+<meta property="article:modified_time" content="2023-12-04T12:46:03.980Z">
 <meta property="article:author" content="John Doe">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:image" content="http://example.com/images/cluster/%E5%88%86%E5%B8%83%E5%BC%8F%E9%9B%86%E7%BE%A4%E6%9E%B6%E6%9E%84.png">
@@ -173,9 +173,8 @@
 <p>1.添加group(注意：pika1主一从为一个group)</p>
 <p><img src="/../images/cluster/%E6%B7%BB%E5%8A%A0group.png" alt="添加group"></p>
 <p>2.添加pikaserver</p>
-<p><img src="/../images/cluster/%E6%B7%BB%E5%8A%A0Pikaserver.png" alt="添加Pikaserver"><br>3.分配slots:</p>
-<p><img src="https://cdn.nlark.com/yuque/0/2023/png/35415924/1693891665708-5878a3f1-5ee7-4753-82e1-741e36a2a9ae.png" alt="img"></p>
-<p>至此，pika和codis已经绑定完毕，我们可以用proxy的vip vport进行访问。</p>
+<p><img src="/../images/cluster/%E6%B7%BB%E5%8A%A0pikaserver.png" alt="添加Pikaserver"><br>3.分配slots:</p>
+<p><img src="/../images/cluster/%E5%88%86%E9%85%8Dslots.png" alt="分配slots"><br>至此，pika和codis已经绑定完毕，我们可以用proxy的vip vport进行访问。</p>
 <h2 id="快速启动脚本"><a href="#快速启动脚本" class="headerlink" title="快速启动脚本"></a>快速启动脚本</h2><p>pika-codis源码(路径:)中 admin 文件夹提供了一系列脚本以便快速启动、停止各个组件，提高运维效率。</p>
 <h3 id="启动codis-dashboard"><a href="#启动codis-dashboard" class="headerlink" title="启动codis-dashboard"></a>启动codis-dashboard</h3><p>使用 codis-dashboard-admin.sh 脚本启动 dashboard，并查看 dashboard 日志确认启动是否有异常。</p>
 <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">./admin/codis-dashboard-admin.sh start</span><br><span class="line"> tail -100 ./log/codis-dashboard.log.2017-04-08</span><br></pre></td></tr></table></figure>
@@ -211,9 +210,9 @@
 
 <h3 id="压测性能展示"><a href="#压测性能展示" class="headerlink" title="压测性能展示"></a>压测性能展示</h3><p>部署12个主12个从实例：</p>
 <p>集群qps:</p>
-<p><img src="https://cdn.nlark.com/yuque/0/2023/png/35415924/1693893928049-6bbf0f3c-2bd6-4fb1-9c67-1f69a5566c06.png" alt="img"></p>
+<p><img src="/../images/cluster/%E5%8E%8B%E6%B5%8B%E6%80%A7%E8%83%BD%E5%B1%95%E7%A4%BA.png" alt="压测性能展示"></p>
 <p>读写耗时：</p>
-<p><img src="https://cdn.nlark.com/yuque/0/2023/png/35415924/1693894428597-c338175a-a978-4faf-b9d1-a31b52eb8de4.png" alt="img"></p>
+<p><img src="/../images/cluster/%E8%AF%BB%E5%86%99%E8%80%97%E6%97%B6.png" alt="读写耗时">)</p>
 <p>参数性能调优：</p>
 <p>我们发现将thread_num调大，将thread_pool_size调小，会导致</p>
 
@@ -230,11 +229,11 @@
     
 <nav id="article-nav">
   
-    <a href="/2023/12/04/linux%E6%9F%A5%E9%97%AE%E9%A2%98%E5%B8%B8%E7%94%A8%E7%9A%84%E5%91%BD%E4%BB%A4/" id="article-nav-newer" class="article-nav-link-wrap">
+    <a href="/2023/12/04/linux%E5%B8%B8%E7%94%A8%E7%9A%84%E5%AE%9A%E4%BD%8D%E5%B7%A5%E5%85%B7%E5%8F%8A%E5%91%BD%E4%BB%A4/" id="article-nav-newer" class="article-nav-link-wrap">
       <strong class="article-nav-caption">Newer</strong>
       <div class="article-nav-title">
         
-          linux查问题常用的命令
+          (no title)
         
       </div>
     </a>
@@ -275,7 +274,7 @@
       <ul>
         
           <li>
-            <a href="/2023/12/04/linux%E6%9F%A5%E9%97%AE%E9%A2%98%E5%B8%B8%E7%94%A8%E7%9A%84%E5%91%BD%E4%BB%A4/">linux查问题常用的命令</a>
+            <a href="/2023/12/04/linux%E5%B8%B8%E7%94%A8%E7%9A%84%E5%AE%9A%E4%BD%8D%E5%B7%A5%E5%85%B7%E5%8F%8A%E5%91%BD%E4%BB%A4/">(no title)</a>
           </li>
         
           <li>
