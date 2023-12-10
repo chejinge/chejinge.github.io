@@ -6,15 +6,15 @@
   
   <title>linux排查问题常用工具 | Hexo</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-  <meta name="description" content="Valgrind查看内存泄漏安装yum install valgrind 常用命令valgrind --leak-check&#x3D;full --tool&#x3D;memcheck --log-file&#x3D;valgrind_output.txt &#x2F;home&#x2F;wuxianrong&#x2F;pika1&#x2F;pika&#x2F;output&#x2F;pika -c &#x2F;home&#x2F;wuxianrong&#x2F;conf&#x2F;pika9981.conf comman">
+  <meta name="description" content="Valgrind查看内存泄漏安装yum install valgrind">
 <meta property="og:type" content="article">
 <meta property="og:title" content="linux排查问题常用工具">
 <meta property="og:url" content="http://example.com/2023/12/04/linux%E6%8E%92%E6%9F%A5%E9%97%AE%E9%A2%98%E5%B8%B8%E7%94%A8%E5%B7%A5%E5%85%B7/index.html">
 <meta property="og:site_name" content="Hexo">
-<meta property="og:description" content="Valgrind查看内存泄漏安装yum install valgrind 常用命令valgrind --leak-check&#x3D;full --tool&#x3D;memcheck --log-file&#x3D;valgrind_output.txt &#x2F;home&#x2F;wuxianrong&#x2F;pika1&#x2F;pika&#x2F;output&#x2F;pika -c &#x2F;home&#x2F;wuxianrong&#x2F;conf&#x2F;pika9981.conf comman">
+<meta property="og:description" content="Valgrind查看内存泄漏安装yum install valgrind">
 <meta property="og:locale" content="en_US">
 <meta property="article:published_time" content="2023-12-04T12:58:11.000Z">
-<meta property="article:modified_time" content="2023-12-04T12:59:32.450Z">
+<meta property="article:modified_time" content="2023-12-10T11:30:12.632Z">
 <meta property="article:author" content="John Doe">
 <meta name="twitter:card" content="summary">
   
@@ -94,6 +94,7 @@
     <div class="e-content article-entry" itemprop="articleBody">
       
         <h2 id="Valgrind查看内存泄漏"><a href="#Valgrind查看内存泄漏" class="headerlink" title="Valgrind查看内存泄漏"></a>Valgrind查看内存泄漏</h2><h3 id="安装"><a href="#安装" class="headerlink" title="安装"></a>安装</h3><p><code>yum install valgrind</code></p>
+<span id="more"></span>
 <h3 id="常用命令"><a href="#常用命令" class="headerlink" title="常用命令"></a>常用命令</h3><p><code>valgrind --leak-check=full --tool=memcheck --log-file=valgrind_output.txt /home/wuxianrong/pika1/pika/output/pika -c /home/wuxianrong/conf/pika9981.conf</code></p>
 <p><code>com</code>mand&#x3D;”valgrind –leak-check&#x3D;full –leak-resolution&#x3D;high “<code>     </code>command&#x3D;”${command} –log-file&#x3D;valgind_info –num-callers&#x3D;20 “<code>     </code>command&#x3D;”${command} –show-reachable&#x3D;yes –tool&#x3D;memcheck “<code>     </code>command&#x3D;”${command} –track-fds&#x3D;yes –track-origins&#x3D;yes “<code>     </code>command&#x3D;”${command} –trace-syscalls&#x3D;yes -v ${mltf}”<code>     </code>if [ “${dbg}” &#x3D;&#x3D; “v” ] ; then<code>       </code>echo “you should start the command &quot;gdb ${mltf}&quot; in another shell and then give gdb the command &quot;target remote | vgdb&quot;“<code>       </code>echo -e “\n”<code>       </code>command&#x3D;”valgrind –leak-check&#x3D;full –tool&#x3D;memcheck –trace-syscalls&#x3D;no –vgdb&#x3D;full –vgdb-error&#x3D;0 -v ${mltf}”<code>     fi</code></p>
 <h2 id="perf火焰图查看cpu过高问题"><a href="#perf火焰图查看cpu过高问题" class="headerlink" title="perf火焰图查看cpu过高问题"></a>perf火焰图查看cpu过高问题</h2><ol>

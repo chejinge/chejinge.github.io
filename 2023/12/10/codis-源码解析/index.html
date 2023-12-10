@@ -6,15 +6,15 @@
   
   <title>codis 源码解析 | Hexo</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-  <meta name="description" content="Coids 简介WhatCodis 是豌豆荚公司开发的一个分布式 Redis 服务，与官方的纯P2P模式不同，Codis采用的是Proxy-based的方案 用户可以看成是一个无限内存的 Redis 服务, 有动态扩&#x2F;缩容的能力。 WhenCodis 是基于 redis-3.28 分支开发的，彼时已经有了官方提供的 redis-cluster 方案。Codis 的作者认为 redis-c">
+  <meta name="description" content="Coids 简介WhatCodis 是豌豆荚公司开发的一个分布式 Redis 服务，与官方的纯P2P模式不同，Codis采用的是Proxy-based的方案 用户可以看成是一个无限内存的 Redis 服务, 有动态扩&#x2F;缩容的能力。 WhenCodis 是基于 redis-3.28 分支开发的，彼时已经有了官方提供的 redis-cluster 方案。Codis 的作者认为 redis-">
 <meta property="og:type" content="article">
 <meta property="og:title" content="codis 源码解析">
 <meta property="og:url" content="http://example.com/2023/12/10/codis-%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90/index.html">
 <meta property="og:site_name" content="Hexo">
-<meta property="og:description" content="Coids 简介WhatCodis 是豌豆荚公司开发的一个分布式 Redis 服务，与官方的纯P2P模式不同，Codis采用的是Proxy-based的方案 用户可以看成是一个无限内存的 Redis 服务, 有动态扩&#x2F;缩容的能力。 WhenCodis 是基于 redis-3.28 分支开发的，彼时已经有了官方提供的 redis-cluster 方案。Codis 的作者认为 redis-c">
+<meta property="og:description" content="Coids 简介WhatCodis 是豌豆荚公司开发的一个分布式 Redis 服务，与官方的纯P2P模式不同，Codis采用的是Proxy-based的方案 用户可以看成是一个无限内存的 Redis 服务, 有动态扩&#x2F;缩容的能力。 WhenCodis 是基于 redis-3.28 分支开发的，彼时已经有了官方提供的 redis-cluster 方案。Codis 的作者认为 redis-">
 <meta property="og:locale" content="en_US">
 <meta property="article:published_time" content="2023-12-10T00:26:08.000Z">
-<meta property="article:modified_time" content="2023-12-10T02:34:46.281Z">
+<meta property="article:modified_time" content="2023-12-10T11:29:52.725Z">
 <meta property="article:author" content="John Doe">
 <meta name="twitter:card" content="summary">
   
@@ -93,7 +93,8 @@
     
     <div class="e-content article-entry" itemprop="articleBody">
       
-        <h1 id="Coids-简介"><a href="#Coids-简介" class="headerlink" title="Coids 简介"></a>Coids 简介</h1><h2 id="What"><a href="#What" class="headerlink" title="What"></a>What</h2><p>Codis 是豌豆荚公司开发的一个<strong>分布式 Redis 服务</strong>，与官方的纯P2P模式不同，Codis采用的是Proxy-based的方案 用户可以看成是一个<strong>无限内存的 Redis 服务</strong>, 有<strong>动态扩&#x2F;缩容的能力</strong>。</p>
+        <span id="more"></span>
+<h1 id="Coids-简介"><a href="#Coids-简介" class="headerlink" title="Coids 简介"></a>Coids 简介</h1><h2 id="What"><a href="#What" class="headerlink" title="What"></a>What</h2><p>Codis 是豌豆荚公司开发的一个<strong>分布式 Redis 服务</strong>，与官方的纯P2P模式不同，Codis采用的是Proxy-based的方案 用户可以看成是一个<strong>无限内存的 Redis 服务</strong>, 有<strong>动态扩&#x2F;缩容的能力</strong>。</p>
 <h2 id="When"><a href="#When" class="headerlink" title="When"></a>When</h2><p>Codis 是基于 redis-3.28 分支开发的，彼时已经有了官方提供的 redis-cluster 方案。Codis 的作者认为 redis-cluster 方案存在两个问题：</p>
 <ul>
 <li>redis-cluster 的数据存储模块和分布式的逻辑模块是耦合在一起的，比较难对业务进行无痛升级。比如，假设 redis-cluster 的分布式逻辑出现了严重 bug，只能重启整个集群，运维困难。</li>
