@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  
+  <title>Pika 全量复制 | Hexo</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <meta name="description" content="背景pika主从节点进行全量数据同步通过rsync命令实现。rsync命令需要单独启动一个进程来实现数据传输，在pika进程重启&#x2F;退出或者机器故障等情况下与pika进程不同步，使用过程中也发现rsync进程异常退出无法定位原因。因此计划将dump文件传输的功能进行集成到pika进程中，使用单独线程进行处理。团队进行了相关的调研，包括openrsync工具，braft中 install s">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Pika 全量复制">
+<meta property="og:url" content="http://example.com/2023/12/10/Pika-%E5%85%A8%E9%87%8F%E5%A4%8D%E5%88%B6/index.html">
+<meta property="og:site_name" content="Hexo">
+<meta property="og:description" content="背景pika主从节点进行全量数据同步通过rsync命令实现。rsync命令需要单独启动一个进程来实现数据传输，在pika进程重启&#x2F;退出或者机器故障等情况下与pika进程不同步，使用过程中也发现rsync进程异常退出无法定位原因。因此计划将dump文件传输的功能进行集成到pika进程中，使用单独线程进行处理。团队进行了相关的调研，包括openrsync工具，braft中 install s">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="http://example.com/images/%E5%85%A8%E9%87%8F%E5%A4%8D%E5%88%B6/%E5%85%A8%E9%87%8F%E5%A4%8D%E5%88%B61.png">
+<meta property="og:image" content="http://example.com/images/%E5%85%A8%E9%87%8F%E5%A4%8D%E5%88%B6/%E5%85%A8%E9%87%8F%E5%A4%8D%E5%88%B62.png">
+<meta property="article:published_time" content="2023-12-10T00:25:28.000Z">
+<meta property="article:modified_time" content="2023-12-10T02:31:17.491Z">
+<meta property="article:author" content="John Doe">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://example.com/images/%E5%85%A8%E9%87%8F%E5%A4%8D%E5%88%B6/%E5%85%A8%E9%87%8F%E5%A4%8D%E5%88%B61.png">
+  
+    <link rel="alternate" href="/atom.xml" title="Hexo" type="application/atom+xml">
+  
+  
+    <link rel="shortcut icon" href="/favicon.png">
+  
+  
+  
+<link rel="stylesheet" href="/css/style.css">
+
+  
+    
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.min.css">
+
+  
+  
+<meta name="generator" content="Hexo 7.0.0"></head>
+
+<body>
+  <div id="container">
+    <div id="wrap">
+      <header id="header">
+  <div id="banner"></div>
+  <div id="header-outer" class="outer">
+    <div id="header-title" class="inner">
+      <h1 id="logo-wrap">
+        <a href="/" id="logo">Hexo</a>
+      </h1>
+      
+    </div>
+    <div id="header-inner" class="inner">
+      <nav id="main-nav">
+        <a id="main-nav-toggle" class="nav-icon"><span class="fa fa-bars"></span></a>
+        
+          <a class="main-nav-link" href="/">Home</a>
+        
+          <a class="main-nav-link" href="/archives">Archives</a>
+        
+      </nav>
+      <nav id="sub-nav">
+        
+        
+          <a class="nav-icon" href="/atom.xml" title="RSS Feed"><span class="fa fa-rss"></span></a>
+        
+        <a class="nav-icon nav-search-btn" title="Search"><span class="fa fa-search"></span></a>
+      </nav>
+      <div id="search-form-wrap">
+        <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" class="search-form-input" placeholder="Search"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="http://example.com"></form>
+      </div>
+    </div>
+  </div>
+</header>
+
+      <div class="outer">
+        <section id="main"><article id="post-Pika-全量复制" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+  <div class="article-meta">
+    <a href="/2023/12/10/Pika-%E5%85%A8%E9%87%8F%E5%A4%8D%E5%88%B6/" class="article-date">
+  <time class="dt-published" datetime="2023-12-10T00:25:28.000Z" itemprop="datePublished">2023-12-10</time>
+</a>
+    
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="p-name article-title" itemprop="headline name">
+      Pika 全量复制
+    </h1>
+  
+
+      </header>
+    
+    <div class="e-content article-entry" itemprop="articleBody">
+      
+        <h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p><strong>pika主从节点进行全量数据同步通过rsync命令实现。rsync命令需要单独启动一个进程来实现数据传输，在pika进程重启&#x2F;退出或者机器故障等情况下与pika进程不同步，使用过程中也发现rsync进程异常退出无法定位原因。因此计划将dump文件传输的功能进行集成到pika进程中，使用单独线程进行处理。</strong><br><strong>团队进行了相关的调研，包括openrsync工具，braft中 install snapshot的逻辑以及基于pika的网络pink自己实现文件传输的功能。综合考虑之后，考虑基于pink网络库实现文件传输。新的文件传输方式需实现：1.支持限速策略且可以动态调整门限值。2.传输性能与之前的rsync方式相当。3. 保证主从复制过程在出现网络丢包，重传，主从节点宕机等异常情况下能正常处理。</strong></p>
+<h2 id="主从复制流程"><a href="#主从复制流程" class="headerlink" title="主从复制流程"></a>主从复制流程</h2><p><strong>Pika支持了redis中的slaveof命令用于在不同的pika实例间进行数据同步。数据同步包括全量同步和增量同步两部分。pika中使用了两个状态机和Auxilary_thread后台线程维护整个同步状态。</strong><br><strong>主从同步整体执行流程为：</strong></p>
+<ol>
+<li><strong>（client节点）通过redis-cli向slave节点发命令，命令中携带master的ip + port。</strong></li>
+<li><strong>（slave节点）收到slaveof请求，设置master，修改conf文件，初始化状态机。</strong></li>
+<li><strong>（slave节点）向master发送metaSync请求，用来比对主从节点的db拓扑结构是否一致。</strong></li>
+<li><strong>（master节点）处理metaSync请求，返回db拓扑信息。</strong></li>
+<li><strong>（slave节点）每个slot单独向master端发送trysync请求，同步自己的binlog offset。</strong></li>
+<li><strong>（master节点）比对slave slot的binlog读取点以及master-run-id，计算是否可以进行增量同步。</strong></li>
+<li><strong>（slave节点）根据回包中的reply_code判断进行增量同步还是全量同步。</strong></li>
+<li><strong>（slave节点）如需全量同步，slot发送dbsync请求给master。</strong></li>
+<li><strong>（master节点）dump引擎文件，启动后台线程使用rsync工具同步文件。</strong></li>
+<li><strong>（slave节点）周期性检测是否已经收到bgsave info文件（master会在最后才同步info文件），收到之后，校验数据，changedb，完成历史数据同步。如果slave对应的binlog offset在master上仍存在，开始进行增量数据的同步。</strong></li>
+</ol>
+<p>**<br><strong>整体同步流程涉及到两个状态机，一个状态机表示pika_server状态，主要用于slave节点收到slaveof请求之后到开始同步数据之前的状态流转。包括：</strong><br>**PIKA_REPL_NO_CONNECT，PIKA_REPL_SHOULD_META_SYNC，PIKA_REPL_META_SYNC_DONE，PIKA_REPL_ERROR。第二个状态机表示每个slot的状态，状态包括kNoConnect，kTryConnect，kTryDBSync，kWaitDBSync，kWaitReply，kConnected，kError，kDBNoConnect。状态流转图如下所示：<br><img src="/../images/%E5%85%A8%E9%87%8F%E5%A4%8D%E5%88%B6/%E5%85%A8%E9%87%8F%E5%A4%8D%E5%88%B61.png" alt="pika_server状态流转图"><br>**<br>**状态流转主要是通过AuxiliaryThread线程的大while循环与网络库的回调函数完成。大致流程为：</p>
+<p><strong>PIKA_REPL_NO_CONNECT -&gt; PIKA_REPL_SHOULD_META_SYNC:</strong> 当slave节点收到slaveof节点请求之后，会调用removeMaster删除已有的master，接着调用SetMaster设置pika_server的状态为meta_sync。</p>
+<p><strong>PIKA_REPL_SHOULD_META_SYNC -&gt; PIKA_REPL_SHOULD_METASYNC_DONE:</strong> Pika AuxiliaryThread在大循环中检测到该状态之后，执行SendMetaSyncRequest向master节点发起metasync请求。当slave节点收到metasync的回包之后，会执行HandleMetaSyncResponse函数，如果请求成功，比对主从节点的db拓扑结构，如果一致，将状态变为PIKA_REPL_META_SYNC_DONE，同时激活SyncSlaveSlot状态机，将slot状态流转到kTryConnect。之后开始slot的状态流转。</p>
+<p><strong>kNoConnect -&gt; kTryConnect：</strong>metasync阶段执行完成后，会启动SyncSlaveSlot的状态机，并将状态流转到kTryConnect。</p>
+<p><strong>kTryConnect -&gt; kWaitReply：</strong>PikaAuxiliaryThread检测到某个slot处于该状态之后，发送trysync命令给master，同步binlog offset给master，同时获取master的db拓扑。之后状态流转到kWaitReply等待接收回包。</p>
+<p><strong>kWaitReply -&gt; kConnected:</strong> 收到trysync命令的回包之后，如果master节点有对应binlog的offset，状态流转到kConnected。</p>
+<p><strong>kWaitReply -&gt; kTryDBSync:</strong> 收到trySync命令的回包之后，如果master节点没有对应binlog的offset，状态流转到kTryDBSync。</p>
+<p><strong>kTryDBSync -&gt; kWaitDBSync:</strong> 对处于kWaitDBSync状态的slot，AuxiliaryThread会发送dbsync命令给master，slot状态重新流转到kWaitReply。</p>
+<p><strong>kWaitReply -&gt; kWaitDBSync:</strong> 收到dbsync回包之后，状态流转到kWaitDBSync。等待master通过rsync推送引擎文件。auxiliaryThread会周期性地对处于kWaitDBSync状态的slot执行TryUpdateMasterOffset，其主要工作就是检查数据同步是否已经完成，如果已经完成，切db，更新状态为kTryConnect，重新发送trysync比对binlog offset。</p>
+<h2 id="方案"><a href="#方案" class="headerlink" title="方案"></a>方案</h2><p><strong>新的主从复制将替代之前的历史数据迁移功能，对应上一节中的步骤9。类似于之前的同步方式，新的数据同步也是基于client-server模式，节点启动时都需要启动一个server。不同的是，传输数据时，slave节点作为client端，master节点作为server端，slave从server端拉取引擎文件并进行加载。之所以采取pull的方式，有两方面考虑：</strong></p>
+<ol>
+<li><strong>push方式相比pull方式要保存更多的元数据。为支持传输限速以及大文件传输，单个文件需拆分为多个block进行传输。如果使用pull模式，只需要slave记录需要拉取的文件和offset，master只需要根据请求参数读取指定文件片段数据即可。使用push的方式，master和slave端都需要记录元信息，且需要网络交互对齐。</strong></li>
+</ol>
+<p><strong>2.使用push方式需要处理的异常场景更多。包括网络异常，节点宕机等，主从节点都需要进行处理。使用pull方式，异常处理只需要由slave节点控制。</strong></p>
+<p><strong>整体的架构比较简单，slave端使用RsyncClient拉取文件，master端使用RsyncServer监听端口并处理请求。</strong></p>
+<p><strong>slave端整体的执行流程是：</strong></p>
+<ol>
+<li><strong>当slave节点上slot状态流转到kWaitDBSync后，初始化RsyncClient。RsyncClient在初始化阶段完成recover操作，请求master节点获取本次数据传输的元信息。</strong></li>
+<li><strong>如果初始化成功，启动RsyncClient多个后台下载线程从master下载引擎文件。</strong></li>
+<li><strong>当所有引擎文件下载完成，slave校验info文件，changedb，更新slot状态为kTryConnect。</strong></li>
+</ol>
+<p><strong>master端处理逻辑较为简单，只需要保证在dump完成之后根据请求中指定的文件名和offset从磁盘中读取文件然后将数据传回给slave即可。</strong></p>
+<h3 id="数据传输"><a href="#数据传输" class="headerlink" title="数据传输"></a>数据传输</h3><p><strong>新方案中使用protobuf方式序列化待传输数据，slave节点主动向master拉取文件内容。每个文件可能被拆分为多次网络请求。具体每次请求中传输多少数据量根据限速策略进行调整。proto文件定义如下所示。</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br></pre></td><td class="code"><pre><span class="line">syntax = &quot;proto2&quot;;</span><br><span class="line">package RsyncService;</span><br><span class="line">​</span><br><span class="line">enum Type &#123;</span><br><span class="line">    kRsyncMeta = 1;</span><br><span class="line">    kRsyncFile = 2;</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line">enum StatusCode &#123;</span><br><span class="line">    kOk  = 1;</span><br><span class="line">    kErr = 2;</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line">message MetaResponse &#123;</span><br><span class="line">    repeated string filenames = 1;</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line">message FileRequest &#123;</span><br><span class="line">    required string filename = 1;</span><br><span class="line">    required uint64 count = 2;</span><br><span class="line">    required uint64 offset = 3;</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line">message FileResponse &#123;</span><br><span class="line">    required int32 eof = 1;</span><br><span class="line">    required uint64 count = 2;</span><br><span class="line">    required uint64 offset = 3;</span><br><span class="line">    required bytes data = 4;</span><br><span class="line">    required string checksum = 5;</span><br><span class="line">    required string filename = 6;</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line">message RsyncRequest &#123;</span><br><span class="line">    required Type type = 1;</span><br><span class="line">    required int32 reader_index = 2;</span><br><span class="line">    required string db_name = 3;</span><br><span class="line">    required uint32 slot_id = 4;</span><br><span class="line">    optional FileRequest file_req = 5;</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line">message RsyncResponse &#123;</span><br><span class="line">    required Type type = 1;</span><br><span class="line">    required int32 reader_index = 2;</span><br><span class="line">    required string snapshot_uuid = 3;</span><br><span class="line">    required string db_name = 4;</span><br><span class="line">    required uint32 slot_id = 5;</span><br><span class="line">    required StatusCode code = 6;</span><br><span class="line">    optional MetaResponse meta_resp = 7;</span><br><span class="line">    optional FileResponse file_resp = 8;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><strong>请求包括两种类型，一个是获取元信息，slave获取master dump相关信息，包括snapshot_uuid（唯一关联一个dump），待传输的文件集合。另一个是拉取具体的文件，通过请求参数中的filename, offset和count指定了要获取的文件片段。回包中包含了传输数据内容，所属文件名以及offset用于slave端过滤掉无效的数据包，如延时到达的回包或重复的回包。为加快数据传输的速度，可以在配置文件中修改后台拉取文件的线程数，也可以通过动态调整限速策略控制数据传输速度。</strong></p>
+<h3 id="下载限速"><a href="#下载限速" class="headerlink" title="下载限速"></a>下载限速</h3><p><strong>文件下载限速的逻辑，参考braft中install_snapshot的限速策略实现了throttle类，总体思路是限制slave节点单位时间内下载的数据量。具体使用上，分别设置每秒最多下载的字节数和统计周期。默认的slave节点单次请求的数据量最多是4MB，发送请求之前会先从throttle类获取当前统计周期中还可以发送的数据量，如果可以发送的数据量为0，sleep 一个统计周期。如果不为0，修改请求中需要获取的数据量。当请求收到回包之后，用实际收到的回包中的数据量更新throttle中的余额。</strong></p>
+<p><strong>注：图中集中在增量同步之前阶段的状态转移，未包含请求错误导致状态流转到kError的情况，也没有包括连接keepalive超时或连接断开时状态被重置为kNoConnect的过程。</strong><br><img src="/../images/%E5%85%A8%E9%87%8F%E5%A4%8D%E5%88%B6/%E5%85%A8%E9%87%8F%E5%A4%8D%E5%88%B62.png" alt="pika_server状态流转图"></p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://example.com/2023/12/10/Pika-%E5%85%A8%E9%87%8F%E5%A4%8D%E5%88%B6/" data-id="clpyvhct60000v0yu6don6inn" data-title="Pika 全量复制" class="article-share-link"><span class="fa fa-share">Share</span></a>
+      
+      
+      
+    </footer>
+  </div>
+  
+    
+<nav id="article-nav">
+  
+    <a href="/2023/12/10/Pika-%E5%A2%9E%E9%87%8F%E5%A4%8D%E5%88%B6/" id="article-nav-newer" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Newer</strong>
+      <div class="article-nav-title">
+        
+          Pika 增量复制
+        
+      </div>
+    </a>
+  
+  
+    <a href="/2023/12/04/linux%E6%8E%92%E6%9F%A5%E9%97%AE%E9%A2%98%E5%B8%B8%E7%94%A8%E5%B7%A5%E5%85%B7/" id="article-nav-older" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Older</strong>
+      <div class="article-nav-title">linux排查问题常用工具</div>
+    </a>
+  
+</nav>
+
+  
+</article>
+
+
+</section>
+        
+          <aside id="sidebar">
+  
+    
+
+  
+    
+
+  
+    
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Archives</h3>
+    <div class="widget">
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2023/12/">December 2023</a></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Recent Posts</h3>
+    <div class="widget">
+      <ul>
+        
+          <li>
+            <a href="/2023/12/10/codis-%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90/">codis 源码解析</a>
+          </li>
+        
+          <li>
+            <a href="/2023/12/10/Pika-%E5%A2%9E%E9%87%8F%E5%A4%8D%E5%88%B6/">Pika 增量复制</a>
+          </li>
+        
+          <li>
+            <a href="/2023/12/10/Pika-%E5%85%A8%E9%87%8F%E5%A4%8D%E5%88%B6/">Pika 全量复制</a>
+          </li>
+        
+          <li>
+            <a href="/2023/12/04/linux%E6%8E%92%E6%9F%A5%E9%97%AE%E9%A2%98%E5%B8%B8%E7%94%A8%E5%B7%A5%E5%85%B7/">linux排查问题常用工具</a>
+          </li>
+        
+          <li>
+            <a href="/2023/12/04/Pika-%E5%88%86%E5%B8%83%E5%BC%8F%E9%9B%86%E7%BE%A4%E8%AF%A6%E8%A7%A3/">Pika 分布式集群详解</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+
+  
+</aside>
+        
+      </div>
+      <footer id="footer">
+  
+  <div class="outer">
+    <div id="footer-info" class="inner">
+      
+      &copy; 2023 John Doe<br>
+      Powered by <a href="https://hexo.io/" target="_blank">Hexo</a>
+    </div>
+  </div>
+</footer>
+
+    </div>
+    <nav id="mobile-nav">
+  
+    <a href="/" class="mobile-nav-link">Home</a>
+  
+    <a href="/archives" class="mobile-nav-link">Archives</a>
+  
+</nav>
+    
+
+
+<script src="/js/jquery-3.6.4.min.js"></script>
+
+
+
+  
+<script src="/fancybox/jquery.fancybox.min.js"></script>
+
+
+
+
+<script src="/js/script.js"></script>
+
+
+
+
+
+  </div>
+</body>
+</html>
