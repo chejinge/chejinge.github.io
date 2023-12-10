@@ -4,15 +4,32 @@
   <meta charset="utf-8">
   
   
-  <title>Hexo</title>
+  <title>Pika 增加缓存层实现冷热数据分离 | Hexo</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-  <meta property="og:type" content="website">
-<meta property="og:title" content="Hexo">
-<meta property="og:url" content="http://example.com/index.html">
+  <meta name="description" content="Pika 上层增加 Redis 缓存层实现冷热数据分离概述我们在2023年11月底发布了pika 3.5.2 alpha 版本，在这个版本中，我们主要携带了两个重大特性，其中一个特性是通过在 Pika 处理命令层增加redis缓存层，实现冷数据和热数据的分离，本篇文章主要叙述冷热数据分离的架构和思想，感兴趣的朋友们可以一起讨论～ 我们都知道，其实在庞大的 kv 存储系统中，用户访问的主要是热数据，">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Pika 增加缓存层实现冷热数据分离">
+<meta property="og:url" content="http://example.com/2023/12/10/Pika-%E5%A2%9E%E5%8A%A0%E7%BC%93%E5%AD%98%E5%B1%82%E5%AE%9E%E7%8E%B0%E5%86%B7%E7%83%AD%E6%95%B0%E6%8D%AE%E5%88%86%E7%A6%BB/index.html">
 <meta property="og:site_name" content="Hexo">
+<meta property="og:description" content="Pika 上层增加 Redis 缓存层实现冷热数据分离概述我们在2023年11月底发布了pika 3.5.2 alpha 版本，在这个版本中，我们主要携带了两个重大特性，其中一个特性是通过在 Pika 处理命令层增加redis缓存层，实现冷数据和热数据的分离，本篇文章主要叙述冷热数据分离的架构和思想，感兴趣的朋友们可以一起讨论～ 我们都知道，其实在庞大的 kv 存储系统中，用户访问的主要是热数据，">
 <meta property="og:locale" content="en_US">
+<meta property="og:image" content="http://example.com/images/%E7%BC%93%E5%AD%98%E5%B1%82/%E7%BC%93%E5%AD%98%E5%B1%82%E6%9E%B6%E6%9E%84%E5%9B%BE.png">
+<meta property="og:image" content="http://example.com/images/%E7%BC%93%E5%AD%98%E5%B1%82/%E4%B8%BB%E5%AE%9E%E4%BE%8B%E8%AF%BB%E5%86%99%E5%8F%8A%E4%BB%8E%E5%AE%9E%E4%BE%8B%E8%AF%BB%E6%B5%81%E7%A8%8B.png">
+<meta property="og:image" content="http://example.com/images/%E7%BC%93%E5%AD%98%E5%B1%82/%E4%BB%8E%E5%AE%9E%E4%BE%8B%E5%86%99%E6%B5%81%E7%A8%8B.png">
+<meta property="og:image" content="http://example.com/images/%E7%BC%93%E5%AD%98%E5%B1%82/cache%E7%B1%BB%E5%9B%BE.png">
+<meta property="og:image" content="http://example.com/images/%E7%BC%93%E5%AD%98%E5%B1%82/cache%E5%90%AF%E5%8A%A8.png">
+<meta property="og:image" content="http://example.com/images/%E7%BC%93%E5%AD%98%E5%B1%82/cacheload.png">
+<meta property="og:image" content="http://example.com/images/%E7%BC%93%E5%AD%98%E5%B1%82/%E5%8E%8B%E6%B5%8B%E6%95%B0%E6%8D%AE%E9%87%8F.png">
+<meta property="og:image" content="http://example.com/images/%E7%BC%93%E5%AD%98%E5%B1%82/%E7%BC%93%E5%AD%98%E5%A4%A7%E5%B0%8F.png">
+<meta property="og:image" content="http://example.com/images/%E7%BC%93%E5%AD%98%E5%B1%82/%E5%8A%A0cache%E8%AF%BB.png">
+<meta property="og:image" content="http://example.com/images/%E7%BC%93%E5%AD%98%E5%B1%82/%E6%9C%AA%E5%8A%A0cache%E8%AF%BB.png">
+<meta property="og:image" content="http://example.com/images/%E7%BC%93%E5%AD%98%E5%B1%82/%E5%8A%A0%E7%BC%93%E5%AD%98%E5%89%8D.png">
+<meta property="og:image" content="http://example.com/images/%E7%BC%93%E5%AD%98%E5%B1%82/%E5%8A%A0%E7%BC%93%E5%AD%98%E5%90%8E.png">
+<meta property="article:published_time" content="2023-12-10T10:22:27.000Z">
+<meta property="article:modified_time" content="2023-12-10T10:57:42.522Z">
 <meta property="article:author" content="John Doe">
 <meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://example.com/images/%E7%BC%93%E5%AD%98%E5%B1%82/%E7%BC%93%E5%AD%98%E5%B1%82%E6%9E%B6%E6%9E%84%E5%9B%BE.png">
   
     <link rel="alternate" href="/atom.xml" title="Hexo" type="application/atom+xml">
   
@@ -67,9 +84,7 @@
 </header>
 
       <div class="outer">
-        <section id="main">
-  
-    <article id="post-Pika-增加缓存层实现冷热数据分离" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+        <section id="main"><article id="post-Pika-增加缓存层实现冷热数据分离" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
   <div class="article-meta">
     <a href="/2023/12/10/Pika-%E5%A2%9E%E5%8A%A0%E7%BC%93%E5%AD%98%E5%B1%82%E5%AE%9E%E7%8E%B0%E5%86%B7%E7%83%AD%E6%95%B0%E6%8D%AE%E5%88%86%E7%A6%BB/" class="article-date">
   <time class="dt-published" datetime="2023-12-10T10:22:27.000Z" itemprop="datePublished">2023-12-10</time>
@@ -82,8 +97,8 @@
       <header class="article-header">
         
   
-    <h1 itemprop="name">
-      <a class="p-name article-title" href="/2023/12/10/Pika-%E5%A2%9E%E5%8A%A0%E7%BC%93%E5%AD%98%E5%B1%82%E5%AE%9E%E7%8E%B0%E5%86%B7%E7%83%AD%E6%95%B0%E6%8D%AE%E5%88%86%E7%A6%BB/">Pika 增加缓存层实现冷热数据分离</a>
+    <h1 class="p-name article-title" itemprop="headline name">
+      Pika 增加缓存层实现冷热数据分离
     </h1>
   
 
@@ -203,412 +218,19 @@
     </footer>
   </div>
   
-</article>
-
-
-
+    
+<nav id="article-nav">
   
-    <article id="post-codis-源码解析" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
-  <div class="article-meta">
-    <a href="/2023/12/10/codis-%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90/" class="article-date">
-  <time class="dt-published" datetime="2023-12-10T00:26:08.000Z" itemprop="datePublished">2023-12-10</time>
-</a>
-    
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
   
-    <h1 itemprop="name">
-      <a class="p-name article-title" href="/2023/12/10/codis-%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90/">codis 源码解析</a>
-    </h1>
+    <a href="/2023/12/10/codis-%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90/" id="article-nav-older" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Older</strong>
+      <div class="article-nav-title">codis 源码解析</div>
+    </a>
   
+</nav>
 
-      </header>
-    
-    <div class="e-content article-entry" itemprop="articleBody">
-      
-        <h1 id="Coids-简介"><a href="#Coids-简介" class="headerlink" title="Coids 简介"></a>Coids 简介</h1><h2 id="What"><a href="#What" class="headerlink" title="What"></a>What</h2><p>Codis 是豌豆荚公司开发的一个<strong>分布式 Redis 服务</strong>，与官方的纯P2P模式不同，Codis采用的是Proxy-based的方案 用户可以看成是一个<strong>无限内存的 Redis 服务</strong>, 有<strong>动态扩&#x2F;缩容的能力</strong>。</p>
-<h2 id="When"><a href="#When" class="headerlink" title="When"></a>When</h2><p>Codis 是基于 redis-3.28 分支开发的，彼时已经有了官方提供的 redis-cluster 方案。Codis 的作者认为 redis-cluster 方案存在两个问题：</p>
-<ul>
-<li>redis-cluster 的数据存储模块和分布式的逻辑模块是耦合在一起的，比较难对业务进行无痛升级。比如，假设 redis-cluster 的分布式逻辑出现了严重 bug，只能重启整个集群，运维困难。</li>
-<li>redis-cluster 对协议做了较大的修改，客户端需要升级版本并且改动代码，才能接入 redis-cluster 方案，成本比较大。</li>
-<li>redis-cluster 不完整</li>
-</ul>
-<p>所以，作者设计了 Codis 这种 “顶层 proxy + 底层 Redis 本身”这种底层可插拔的架构。</p>
-<h2 id="Why"><a href="#Why" class="headerlink" title="Why"></a>Why</h2><ul>
-<li>Redis获得动态扩容&#x2F;缩容的能力，增减redis实例对client完全透明、不需要重启服务，不需要业务方担心 Redis 内存爆掉的问题. 也不用担心申请太大, 造成浪费。业务方也不需要自己维护 Redis。</li>
-<li>Codis支持水平扩容&#x2F;缩容，扩容可以直接界面的 “Auto Rebalance” 按钮，缩容只需要将要下线的实例拥有的slot迁移到其它实例，然后在界面上删除下线的group即可。</li>
-</ul>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://example.com/2023/12/10/codis-%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90/" data-id="clpyvhcta0002v0yuhz4uetxb" data-title="codis 源码解析" class="article-share-link"><span class="fa fa-share">Share</span></a>
-      
-      
-      
-    </footer>
-  </div>
   
 </article>
-
-
-
-  
-    <article id="post-Pika-增量复制" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
-  <div class="article-meta">
-    <a href="/2023/12/10/Pika-%E5%A2%9E%E9%87%8F%E5%A4%8D%E5%88%B6/" class="article-date">
-  <time class="dt-published" datetime="2023-12-10T00:25:37.000Z" itemprop="datePublished">2023-12-10</time>
-</a>
-    
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="p-name article-title" href="/2023/12/10/Pika-%E5%A2%9E%E9%87%8F%E5%A4%8D%E5%88%B6/">Pika 增量复制</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="e-content article-entry" itemprop="articleBody">
-      
-        <h1 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h1><p><strong>pika支持为两个不同的pika节点建立同步关系。建立通过关系之后，slave节点处理客户端的读请求，master节点处理客户端的读写请求，写入的数据通过binlog异步同步给slave节点。默认的主从同步方式为异步复制，包括了存量历史数据同步+增量数据同步两个阶段。</strong></p>
-<h1 id="主要类介绍"><a href="#主要类介绍" class="headerlink" title="主要类介绍"></a>主要类介绍</h1><p><strong>PikaReplServer</strong><br>master节点用于binlog复制的server。主要类成员变量和函数包括：</p>
-<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">class PikaReplServer &#123;</span><br><span class="line">  <span class="comment">//向slave发包的入口函数</span></span><br><span class="line">  pstd::Status SendSlaveBinlogChips(<span class="keyword">const</span> std::<span class="type">string</span>&amp; ip, <span class="type">int</span> port, <span class="keyword">const</span> std::vector&lt;WriteTask&gt;&amp; tasks);</span><br><span class="line">  <span class="comment">//根据WriteTask构造binlog数据包，包含了需要同步给slave的数据</span></span><br><span class="line">  void BuildBinlogSyncResp(<span class="keyword">const</span> std::vector&lt;WriteTask&gt;&amp; tasks, InnerMessage::InnerResponse* resp);</span><br><span class="line">  <span class="comment">//网络发包</span></span><br><span class="line">  pstd::Status Write(<span class="keyword">const</span> std::<span class="type">string</span>&amp; ip, <span class="type">int</span> port, <span class="keyword">const</span> std::<span class="type">string</span>&amp; msg);</span><br><span class="line">  <span class="comment">//调用函数，用来将函数调度到server_tp_线程池中执行</span></span><br><span class="line">  void Schedule(net::TaskFunc <span class="function"><span class="keyword">func</span>, <span class="title">void</span>* <span class="title">arg</span>);</span></span><br><span class="line"></span><br><span class="line">  <span class="comment">//线程池，处理slave节点发来的请求</span></span><br><span class="line">  std::unique_ptr&lt;net::ThreadPool&gt; server_tp_ = nullptr;</span><br><span class="line">  <span class="comment">//网络线程，负责收发包</span></span><br><span class="line">  std::unique_ptr&lt;PikaReplServerThread&gt; pika_repl_server_thread_ = nullptr;</span><br><span class="line">  std::<span class="keyword">map</span>&lt;std::<span class="type">string</span>, <span class="type">int</span>&gt; client_conn_map_;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p><strong>PikaReplServer主要的成员函数是server_tp_和pika_repl_server_thread_，server_tp_是工作线程池，pika_repl_server_thread_是网络线程。围绕这两个成员变量，该类主要就是实现了发包&#x2F;连接管理&#x2F;执行函数调度的功能。</strong></p>
-<p><strong>PikaReplServerConn</strong><br>PikaReplServerConn是net::PbConn的派生类，主要实现了网络收包的处理。主要成员函数包括：</p>
-<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br></pre></td><td class="code"><pre><span class="line">class PikaReplServerConn : public net::PbConn &#123;</span><br><span class="line"> public:</span><br><span class="line">  PikaReplServerConn(<span class="type">int</span> fd, <span class="keyword">const</span> std::<span class="type">string</span>&amp; ip_port, net::Thread* thread, void* worker_specific_data,</span><br><span class="line">                     net::NetMultiplexer* mpx);</span><br><span class="line">  ~PikaReplServerConn() override;</span><br><span class="line"></span><br><span class="line">  <span class="comment">//处理slave节点发来的metasync请求</span></span><br><span class="line">  static void HandleMetaSyncRequest(void* arg);</span><br><span class="line">  <span class="comment">//处理slave节点的trysync请求</span></span><br><span class="line">  static void HandleTrySyncRequest(void* arg);</span><br><span class="line">  <span class="comment">//处理trysync请求时，比对slave节点传来的offset和master本地的offset</span></span><br><span class="line">  static <span class="type">bool</span> TrySyncOffsetCheck(<span class="keyword">const</span> std::shared_ptr&lt;SyncMasterSlot&gt;&amp; slot,</span><br><span class="line">                                 <span class="keyword">const</span> InnerMessage::InnerRequest::TrySync&amp; try_sync_request,</span><br><span class="line">                                 InnerMessage::InnerResponse::TrySync* try_sync_response);</span><br><span class="line">  <span class="comment">//与异步复制无关，暂不考虑</span></span><br><span class="line">  static <span class="type">bool</span> TrySyncConsensusOffsetCheck(<span class="keyword">const</span> std::shared_ptr&lt;SyncMasterSlot&gt;&amp; slot,</span><br><span class="line">                                          <span class="keyword">const</span> InnerMessage::ConsensusMeta&amp; meta,</span><br><span class="line">                                          InnerMessage::InnerResponse* response,</span><br><span class="line">                                          InnerMessage::InnerResponse::TrySync* try_sync_response);</span><br><span class="line">  <span class="comment">//更新syncmasterslot中的slavenode节点</span></span><br><span class="line">  static <span class="type">bool</span> TrySyncUpdateSlaveNode(<span class="keyword">const</span> std::shared_ptr&lt;SyncMasterSlot&gt;&amp; slot,</span><br><span class="line">                                     <span class="keyword">const</span> InnerMessage::InnerRequest::TrySync&amp; try_sync_request,</span><br><span class="line">                                     <span class="keyword">const</span> std::shared_ptr&lt;net::PbConn&gt;&amp; conn,</span><br><span class="line">                                     InnerMessage::InnerResponse::TrySync* try_sync_response);</span><br><span class="line">  <span class="comment">//与异步复制无关，暂不考虑</span></span><br><span class="line">  static void BuildConsensusMeta(<span class="keyword">const</span> <span class="type">bool</span>&amp; reject, <span class="keyword">const</span> std::vector&lt;LogOffset&gt;&amp; hints, <span class="keyword">const</span> uint32_t&amp; term,</span><br><span class="line">                                     InnerMessage::InnerResponse* response);</span><br><span class="line"></span><br><span class="line">  <span class="comment">//处理dbsync请求</span></span><br><span class="line">  static void HandleDBSyncRequest(void* arg);</span><br><span class="line">  <span class="comment">//处理binlogsync请求，更确切地说，应该是处理slave节点的binlogsync ack请求</span></span><br><span class="line">  static void HandleBinlogSyncRequest(void* arg);</span><br><span class="line"></span><br><span class="line">  <span class="comment">//网络线程处理回包请求的入口函数，</span></span><br><span class="line">  <span class="comment">//DealMessage中根据请求包的类型调用上述不同的处理函数，并调度到PikaReplServer的server_tp中执行</span></span><br><span class="line">  <span class="type">int</span> DealMessage() override;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
-
-<p><strong>PikaReplServerThread</strong><br>PikaReplServerThread loop处理网络收发包。</p>
-<p><strong>write_queue</strong></p>
-<p><strong>待同步给slave的数据，用来缓存从binlog中读到的数据。</strong></p>
-<p><strong>sync_window</strong></p>
-<p><strong>同步窗口，用来限制master同步给slave的速度。</strong></p>
-<p><strong>以上为master端涉及到的类，接下来介绍slave端相关类。</strong><br><strong>PikaReplClient</strong></p>
-<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line">class PikaReplClient &#123;</span><br><span class="line"> public:</span><br><span class="line">  pstd::Status Write(<span class="keyword">const</span> std::<span class="type">string</span>&amp; ip, <span class="type">int</span> port, <span class="keyword">const</span> std::<span class="type">string</span>&amp; msg);</span><br><span class="line"></span><br><span class="line">  void Schedule(net::TaskFunc <span class="function"><span class="keyword">func</span>, <span class="title">void</span>* <span class="title">arg</span>);</span></span><br><span class="line">  void ScheduleWriteBinlogTask(<span class="keyword">const</span> std::<span class="type">string</span>&amp; db_slot, <span class="keyword">const</span> std::shared_ptr&lt;InnerMessage::InnerResponse&gt;&amp; res,</span><br><span class="line">                               <span class="keyword">const</span> std::shared_ptr&lt;net::PbConn&gt;&amp; conn, void* res_private_data);</span><br><span class="line">  void ScheduleWriteDBTask(<span class="keyword">const</span> std::shared_ptr&lt;Cmd&gt;&amp; cmd_ptr, <span class="keyword">const</span> LogOffset&amp; offset, <span class="keyword">const</span> std::<span class="type">string</span>&amp; db_name,</span><br><span class="line">                           uint32_t slot_id);</span><br><span class="line"></span><br><span class="line">  pstd::Status SendMetaSync();</span><br><span class="line">  pstd::Status SendSlotDBSync(<span class="keyword">const</span> std::<span class="type">string</span>&amp; ip, uint32_t port, <span class="keyword">const</span> std::<span class="type">string</span>&amp; db_name, uint32_t slot_id,</span><br><span class="line">                             <span class="keyword">const</span> BinlogOffset&amp; boffset, <span class="keyword">const</span> std::<span class="type">string</span>&amp; local_ip);</span><br><span class="line">  pstd::Status SendSlotTrySync(<span class="keyword">const</span> std::<span class="type">string</span>&amp; ip, uint32_t port, <span class="keyword">const</span> std::<span class="type">string</span>&amp; db_name,</span><br><span class="line">                              uint32_t slot_id, <span class="keyword">const</span> BinlogOffset&amp; boffset, <span class="keyword">const</span> std::<span class="type">string</span>&amp; local_ip);</span><br><span class="line">  pstd::Status SendSlotBinlogSync(<span class="keyword">const</span> std::<span class="type">string</span>&amp; ip, uint32_t port, <span class="keyword">const</span> std::<span class="type">string</span>&amp; db_name,</span><br><span class="line">                                 uint32_t slot_id, <span class="keyword">const</span> LogOffset&amp; ack_start, <span class="keyword">const</span> LogOffset&amp; ack_end,</span><br><span class="line">                                 <span class="keyword">const</span> std::<span class="type">string</span>&amp; local_ip, <span class="type">bool</span> is_first_send);</span><br><span class="line"></span><br><span class="line"> private:</span><br><span class="line">  std::unique_ptr&lt;PikaReplClientThread&gt; client_thread_;</span><br><span class="line">  std::vector&lt;std::unique_ptr&lt;PikaReplBgWorker&gt;&gt; bg_workers_;</span><br><span class="line">&#125;;</span><br><span class="line">​</span><br></pre></td></tr></table></figure>
-
-<p><strong>与PikaReplServer相对的，PikaReplClient是slave端用来处理网络收发包和handler函数调度的类。</strong></p>
-<p><strong>PikaReplClientConn</strong></p>
-<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">class PikaReplClientConn : public net::PbConn &#123;</span><br><span class="line"> public:</span><br><span class="line"></span><br><span class="line">  static void HandleMetaSyncResponse(void* arg);</span><br><span class="line">  static void HandleDBSyncResponse(void* arg);</span><br><span class="line">  static void HandleTrySyncResponse(void* arg);</span><br><span class="line">  static void HandleRemoveSlaveNodeResponse(void* arg);</span><br><span class="line"></span><br><span class="line">  static <span class="type">bool</span> IsDBStructConsistent(<span class="keyword">const</span> std::vector&lt;DBStruct&gt;&amp; current_dbs,</span><br><span class="line">                                   <span class="keyword">const</span> std::vector&lt;DBStruct&gt;&amp; expect_tables);</span><br><span class="line">  <span class="type">int</span> DealMessage() override;</span><br><span class="line"></span><br><span class="line"> private:</span><br><span class="line">  void DispatchBinlogRes(<span class="keyword">const</span> std::shared_ptr&lt;InnerMessage::InnerResponse&gt;&amp; response);</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
-
-<p><strong>PikaReplClientConn用来处理master返回的response消息，并根据消息类型设置对应的handler函数，函数被调度到PikaReplClient执行。</strong></p>
-<p><strong>重量级类就是PikaReplicaManager。</strong></p>
-<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br></pre></td><td class="code"><pre><span class="line">class PikaReplicaManager &#123;</span><br><span class="line"> public:</span><br><span class="line">  <span class="comment">//slave节点在收到metasync之后执行，用来初始化syncslaveslot的状态机</span></span><br><span class="line">  pstd::Status ActivateSyncSlaveSlot(<span class="keyword">const</span> RmNode&amp; node, <span class="keyword">const</span> ReplState&amp; repl_state);</span><br><span class="line">  pstd::Status DeactivateSyncSlaveSlot(<span class="keyword">const</span> SlotInfo&amp; p_info);</span><br><span class="line"></span><br><span class="line">  <span class="comment">// For Pika Repl Client Thread</span></span><br><span class="line">  pstd::Status SendMetaSyncRequest();</span><br><span class="line">  pstd::Status SendRemoveSlaveNodeRequest(<span class="keyword">const</span> std::<span class="type">string</span>&amp; table, uint32_t slot_id);</span><br><span class="line">  pstd::Status SendSlotTrySyncRequest(<span class="keyword">const</span> std::<span class="type">string</span>&amp; db_name, size_t slot_id);</span><br><span class="line">  pstd::Status SendSlotDBSyncRequest(<span class="keyword">const</span> std::<span class="type">string</span>&amp; db_name, size_t slot_id);</span><br><span class="line">  pstd::Status SendSlotBinlogSyncAckRequest(<span class="keyword">const</span> std::<span class="type">string</span>&amp; table, uint32_t slot_id, <span class="keyword">const</span> LogOffset&amp; ack_start,</span><br><span class="line">                                           <span class="keyword">const</span> LogOffset&amp; ack_end, <span class="type">bool</span> is_first_send = <span class="literal">false</span>);</span><br><span class="line">  pstd::Status CloseReplClientConn(<span class="keyword">const</span> std::<span class="type">string</span>&amp; ip, int32_t port);</span><br><span class="line"></span><br><span class="line">  <span class="comment">// For Pika Repl Server Thread</span></span><br><span class="line">  pstd::Status SendSlaveBinlogChipsRequest(<span class="keyword">const</span> std::<span class="type">string</span>&amp; ip, <span class="type">int</span> port, <span class="keyword">const</span> std::vector&lt;WriteTask&gt;&amp; tasks);</span><br><span class="line"></span><br><span class="line">  pstd::Status RunSyncSlaveSlotStateMachine();</span><br><span class="line"></span><br><span class="line">  <span class="comment">//用于master和slave端的keepalive检测</span></span><br><span class="line">  pstd::Status CheckSyncTimeout(uint64_t now);</span><br><span class="line"></span><br><span class="line">  <span class="comment">// To check slot info</span></span><br><span class="line">  <span class="comment">// For pkcluster info command</span></span><br><span class="line">  pstd::Status GetSlotInfo(<span class="keyword">const</span> std::<span class="type">string</span>&amp; table, uint32_t slot_id, std::<span class="type">string</span>* info);</span><br><span class="line"></span><br><span class="line">  void FindCompleteReplica(std::vector&lt;std::<span class="type">string</span>&gt;* replica);</span><br><span class="line">  void FindCommonMaster(std::<span class="type">string</span>* master);</span><br><span class="line">  pstd::Status CheckSlotRole(<span class="keyword">const</span> std::<span class="type">string</span>&amp; table, uint32_t slot_id, <span class="type">int</span>* role);</span><br><span class="line"></span><br><span class="line">  void RmStatus(std::<span class="type">string</span>* debug_info);</span><br><span class="line"></span><br><span class="line">  static <span class="type">bool</span> CheckSlaveSlotState(<span class="keyword">const</span> std::<span class="type">string</span>&amp; ip, <span class="type">int</span> port);</span><br><span class="line"></span><br><span class="line">  pstd::Status LostConnection(<span class="keyword">const</span> std::<span class="type">string</span>&amp; ip, <span class="type">int</span> port);</span><br><span class="line"></span><br><span class="line">  <span class="comment">// Update binlog win and try to send next binlog</span></span><br><span class="line">  pstd::Status UpdateSyncBinlogStatus(<span class="keyword">const</span> RmNode&amp; slave, <span class="keyword">const</span> LogOffset&amp; offset_start, <span class="keyword">const</span> LogOffset&amp; offset_end);</span><br><span class="line"></span><br><span class="line">  pstd::Status WakeUpBinlogSync();</span><br><span class="line"></span><br><span class="line">  <span class="comment">// write_queue related</span></span><br><span class="line">  void ProduceWriteQueue(<span class="keyword">const</span> std::<span class="type">string</span>&amp; ip, <span class="type">int</span> port, uint32_t slot_id, <span class="keyword">const</span> std::vector&lt;WriteTask&gt;&amp; tasks);</span><br><span class="line">  <span class="type">int</span> ConsumeWriteQueue();</span><br><span class="line">  void DropItemInWriteQueue(<span class="keyword">const</span> std::<span class="type">string</span>&amp; ip, <span class="type">int</span> port);</span><br><span class="line"></span><br><span class="line">  <span class="comment">// Schedule Task</span></span><br><span class="line">  void ScheduleReplServerBGTask(net::TaskFunc <span class="function"><span class="keyword">func</span>, <span class="title">void</span>* <span class="title">arg</span>);</span></span><br><span class="line">  void ScheduleReplClientBGTask(net::TaskFunc <span class="function"><span class="keyword">func</span>, <span class="title">void</span>* <span class="title">arg</span>);</span></span><br><span class="line">  void ScheduleWriteBinlogTask(<span class="keyword">const</span> std::<span class="type">string</span>&amp; db_slot,</span><br><span class="line">                               <span class="keyword">const</span> std::shared_ptr&lt;InnerMessage::InnerResponse&gt;&amp; res,</span><br><span class="line">                               <span class="keyword">const</span> std::shared_ptr&lt;net::PbConn&gt;&amp; conn, void* res_private_data);</span><br><span class="line">  void ScheduleWriteDBTask(<span class="keyword">const</span> std::shared_ptr&lt;Cmd&gt;&amp; cmd_ptr, <span class="keyword">const</span> LogOffset&amp; offset, <span class="keyword">const</span> std::<span class="type">string</span>&amp; db_name,</span><br><span class="line">                           uint32_t slot_id);</span><br><span class="line"></span><br><span class="line">  void ReplServerRemoveClientConn(<span class="type">int</span> fd);</span><br><span class="line">  void ReplServerUpdateClientConnMap(<span class="keyword">const</span> std::<span class="type">string</span>&amp; ip_port, <span class="type">int</span> fd);</span><br><span class="line"></span><br><span class="line"> private:</span><br><span class="line">  void InitSlot();</span><br><span class="line">  pstd::Status SelectLocalIp(<span class="keyword">const</span> std::<span class="type">string</span>&amp; remote_ip, <span class="type">int</span> remote_port, std::<span class="type">string</span>* local_ip);</span><br><span class="line"></span><br><span class="line">  std::shared_mutex slots_rw_;</span><br><span class="line">  std::unordered_map&lt;SlotInfo, std::shared_ptr&lt;SyncMasterSlot&gt;, hash_slot_info&gt; sync_master_slots_;</span><br><span class="line">  std::unordered_map&lt;SlotInfo, std::shared_ptr&lt;SyncSlaveSlot&gt;, hash_slot_info&gt; sync_slave_slots_;</span><br><span class="line"></span><br><span class="line">  pstd::Mutex write_queue_mu_;</span><br><span class="line">  <span class="comment">// every host owns a queue, the key is &quot;ip+port&quot;</span></span><br><span class="line">  std::unordered_map&lt;std::<span class="type">string</span>, std::unordered_map&lt;uint32_t, std::queue&lt;WriteTask&gt;&gt;&gt; write_queues_;</span><br><span class="line"></span><br><span class="line">  std::unique_ptr&lt;PikaReplClient&gt; pika_repl_client_;</span><br><span class="line">  std::unique_ptr&lt;PikaReplServer&gt; pika_repl_server_;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
-
-<h1 id="线程模型"><a href="#线程模型" class="headerlink" title="线程模型"></a>线程模型</h1><p><strong>整体主从同步阶段，涉及多个线程，包括：</strong><br>（master端）AuxiliaryThread(1个)，PikaReplServer网络线程（1个），PikaReplServer后台线程池（默认3个）。<br>（slave端） AuxiliaryThread(1个)，PikaReplClient网络线程（1个），BgWorker后台线程池（n个）。<br>对于master端来说，AuxiliaryThread的工作包括3个，包括检测slotSyncTimeout，读取binlog文件到writeQueue中，从writeQueue中读出数据发送给slave节点。<br>PikaReplServer后台线程池用来处理收到的请求包。<br>对于slave端来说，AuxiliaryThread工作包括根据状态机状态向master发送请求，检测SlotSyncTimeout。bgworker线程池用来处理master的回包，写binlog文件，写rocksdb引擎。</p>
-<h1 id="主要过程"><a href="#主要过程" class="headerlink" title="主要过程"></a>主要过程</h1><h2 id="keepalive"><a href="#keepalive" class="headerlink" title="keepalive"></a>keepalive</h2><p><strong>master和slave端都有keepalive机制。都是在auxiliaryThread中周期性执行。</strong><br>对master而言，它为每个slavenode分别记录了last_send_time和last_receive_time，当last_recv_time距离当前时间超过20s，将slave删掉。当last_send_time距离当前时间超过2s并且sent_offset &#x3D;&#x3D; acked_offset，发送空的binlogsync请求给slave，作为心跳包。<br>对于slave而言，只有处于kWaitDBSync和kConnected状态的slot才需要进行keepalive，如果上一次收到master的数据包的时间距离当前已经超过了20s，将slot的状态重置为kTryConnect，重新走一遍流程。</p>
-<h2 id="数据同步"><a href="#数据同步" class="headerlink" title="数据同步"></a>数据同步</h2><p><strong>数据同步从slave节点收到slave命令开始，之后slave节点发送metasync到master，获取master的拓扑并进行比对。校验通过后初始化本地的SyncSlaveSlot，并发送TrySync给master。master校验slave发来的offset对应的binlog文件本地是否还持有，如果已经删除，改为执行全量同步。如果存在即为增量同步。接下来介绍增来给你同步的场景。</strong></p>
-<p><strong>(master节点) 收到trysync请求之后，比对slave的offset通过之后，如果之前没有添加过该slave，为slave节点构造一个SlaveNode，创建session_id，并将session_id返回给slave。</strong><br>(slave节点) slave节点收到trysync请求之后，判断返回的statuscode，如果不需要同步历史数据，将状态流转到kconnected。向master节点发送binlogsyncack信息，同步本地的offset。<br>(master节点) 收到binlogsync请求之后，如果是slavenode第一次发送的binlogsync ack请求，初始化binlogReader。从binlog中读数据到write_queue中。如果不是第一次，更新sync——window，从binlog中读数据到write_queue，唤醒auxiliaryThread.<br>(master节点）auxiliaryThread检测到write_queue中有数据，将数据发给slave。<br>(slave节点) 收到master同步的数据，交由pika_repl_bgworker中的线程进行处理，包括校验session_id，slave节点的状态，slot的状态，写binlog，写db等流程，最终执行完成之后向master恢复binlogsync ack，更新master的binlog读取点。</p>
-<p>##主从复制增量复制和全量复制新的判断方式<br>为了解决服务重启会出现ip port漂移或者变化的情况出现，我们引入了数据集的概念，用一个replicationID 去标记一个数据集，当第一个slave slaveof 主节点时，生成replicationID，并进行持久化，当服务断开重新链接时根据replicationID和offset偏移量决定去做增量复制还是全量复制，有效的解决了数据浪费的问题，基本理论如下图所示：</p>
-<p><img src="/../images/%E5%A2%9E%E9%87%8F%E5%A4%8D%E5%88%B6/%E5%A2%9E%E9%87%8F%E5%A4%8D%E5%88%B6.png" alt="pika增量复制replicationID示例"></p>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://example.com/2023/12/10/Pika-%E5%A2%9E%E9%87%8F%E5%A4%8D%E5%88%B6/" data-id="clpyvhct90001v0yuadmz0ipc" data-title="Pika 增量复制" class="article-share-link"><span class="fa fa-share">Share</span></a>
-      
-      
-      
-    </footer>
-  </div>
-  
-</article>
-
-
-
-  
-    <article id="post-Pika-全量复制" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
-  <div class="article-meta">
-    <a href="/2023/12/10/Pika-%E5%85%A8%E9%87%8F%E5%A4%8D%E5%88%B6/" class="article-date">
-  <time class="dt-published" datetime="2023-12-10T00:25:28.000Z" itemprop="datePublished">2023-12-10</time>
-</a>
-    
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="p-name article-title" href="/2023/12/10/Pika-%E5%85%A8%E9%87%8F%E5%A4%8D%E5%88%B6/">Pika 全量复制</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="e-content article-entry" itemprop="articleBody">
-      
-        <h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p><strong>pika主从节点进行全量数据同步通过rsync命令实现。rsync命令需要单独启动一个进程来实现数据传输，在pika进程重启&#x2F;退出或者机器故障等情况下与pika进程不同步，使用过程中也发现rsync进程异常退出无法定位原因。因此计划将dump文件传输的功能进行集成到pika进程中，使用单独线程进行处理。</strong><br><strong>团队进行了相关的调研，包括openrsync工具，braft中 install snapshot的逻辑以及基于pika的网络pink自己实现文件传输的功能。综合考虑之后，考虑基于pink网络库实现文件传输。新的文件传输方式需实现：1.支持限速策略且可以动态调整门限值。2.传输性能与之前的rsync方式相当。3. 保证主从复制过程在出现网络丢包，重传，主从节点宕机等异常情况下能正常处理。</strong></p>
-<h2 id="主从复制流程"><a href="#主从复制流程" class="headerlink" title="主从复制流程"></a>主从复制流程</h2><p><strong>Pika支持了redis中的slaveof命令用于在不同的pika实例间进行数据同步。数据同步包括全量同步和增量同步两部分。pika中使用了两个状态机和Auxilary_thread后台线程维护整个同步状态。</strong><br><strong>主从同步整体执行流程为：</strong></p>
-<ol>
-<li><strong>（client节点）通过redis-cli向slave节点发命令，命令中携带master的ip + port。</strong></li>
-<li><strong>（slave节点）收到slaveof请求，设置master，修改conf文件，初始化状态机。</strong></li>
-<li><strong>（slave节点）向master发送metaSync请求，用来比对主从节点的db拓扑结构是否一致。</strong></li>
-<li><strong>（master节点）处理metaSync请求，返回db拓扑信息。</strong></li>
-<li><strong>（slave节点）每个slot单独向master端发送trysync请求，同步自己的binlog offset。</strong></li>
-<li><strong>（master节点）比对slave slot的binlog读取点以及master-run-id，计算是否可以进行增量同步。</strong></li>
-<li><strong>（slave节点）根据回包中的reply_code判断进行增量同步还是全量同步。</strong></li>
-<li><strong>（slave节点）如需全量同步，slot发送dbsync请求给master。</strong></li>
-<li><strong>（master节点）dump引擎文件，启动后台线程使用rsync工具同步文件。</strong></li>
-<li><strong>（slave节点）周期性检测是否已经收到bgsave info文件（master会在最后才同步info文件），收到之后，校验数据，changedb，完成历史数据同步。如果slave对应的binlog offset在master上仍存在，开始进行增量数据的同步。</strong></li>
-</ol>
-<p>**<br><strong>整体同步流程涉及到两个状态机，一个状态机表示pika_server状态，主要用于slave节点收到slaveof请求之后到开始同步数据之前的状态流转。包括：</strong><br>**PIKA_REPL_NO_CONNECT，PIKA_REPL_SHOULD_META_SYNC，PIKA_REPL_META_SYNC_DONE，PIKA_REPL_ERROR。第二个状态机表示每个slot的状态，状态包括kNoConnect，kTryConnect，kTryDBSync，kWaitDBSync，kWaitReply，kConnected，kError，kDBNoConnect。状态流转图如下所示：<br><img src="/../images/%E5%85%A8%E9%87%8F%E5%A4%8D%E5%88%B6/%E5%85%A8%E9%87%8F%E5%A4%8D%E5%88%B61.png" alt="pika_server状态流转图"><br>**<br>**状态流转主要是通过AuxiliaryThread线程的大while循环与网络库的回调函数完成。大致流程为：</p>
-<p><strong>PIKA_REPL_NO_CONNECT -&gt; PIKA_REPL_SHOULD_META_SYNC:</strong> 当slave节点收到slaveof节点请求之后，会调用removeMaster删除已有的master，接着调用SetMaster设置pika_server的状态为meta_sync。</p>
-<p><strong>PIKA_REPL_SHOULD_META_SYNC -&gt; PIKA_REPL_SHOULD_METASYNC_DONE:</strong> Pika AuxiliaryThread在大循环中检测到该状态之后，执行SendMetaSyncRequest向master节点发起metasync请求。当slave节点收到metasync的回包之后，会执行HandleMetaSyncResponse函数，如果请求成功，比对主从节点的db拓扑结构，如果一致，将状态变为PIKA_REPL_META_SYNC_DONE，同时激活SyncSlaveSlot状态机，将slot状态流转到kTryConnect。之后开始slot的状态流转。</p>
-<p><strong>kNoConnect -&gt; kTryConnect：</strong>metasync阶段执行完成后，会启动SyncSlaveSlot的状态机，并将状态流转到kTryConnect。</p>
-<p><strong>kTryConnect -&gt; kWaitReply：</strong>PikaAuxiliaryThread检测到某个slot处于该状态之后，发送trysync命令给master，同步binlog offset给master，同时获取master的db拓扑。之后状态流转到kWaitReply等待接收回包。</p>
-<p><strong>kWaitReply -&gt; kConnected:</strong> 收到trysync命令的回包之后，如果master节点有对应binlog的offset，状态流转到kConnected。</p>
-<p><strong>kWaitReply -&gt; kTryDBSync:</strong> 收到trySync命令的回包之后，如果master节点没有对应binlog的offset，状态流转到kTryDBSync。</p>
-<p><strong>kTryDBSync -&gt; kWaitDBSync:</strong> 对处于kWaitDBSync状态的slot，AuxiliaryThread会发送dbsync命令给master，slot状态重新流转到kWaitReply。</p>
-<p><strong>kWaitReply -&gt; kWaitDBSync:</strong> 收到dbsync回包之后，状态流转到kWaitDBSync。等待master通过rsync推送引擎文件。auxiliaryThread会周期性地对处于kWaitDBSync状态的slot执行TryUpdateMasterOffset，其主要工作就是检查数据同步是否已经完成，如果已经完成，切db，更新状态为kTryConnect，重新发送trysync比对binlog offset。</p>
-<h2 id="方案"><a href="#方案" class="headerlink" title="方案"></a>方案</h2><p><strong>新的主从复制将替代之前的历史数据迁移功能，对应上一节中的步骤9。类似于之前的同步方式，新的数据同步也是基于client-server模式，节点启动时都需要启动一个server。不同的是，传输数据时，slave节点作为client端，master节点作为server端，slave从server端拉取引擎文件并进行加载。之所以采取pull的方式，有两方面考虑：</strong></p>
-<ol>
-<li><strong>push方式相比pull方式要保存更多的元数据。为支持传输限速以及大文件传输，单个文件需拆分为多个block进行传输。如果使用pull模式，只需要slave记录需要拉取的文件和offset，master只需要根据请求参数读取指定文件片段数据即可。使用push的方式，master和slave端都需要记录元信息，且需要网络交互对齐。</strong></li>
-</ol>
-<p><strong>2.使用push方式需要处理的异常场景更多。包括网络异常，节点宕机等，主从节点都需要进行处理。使用pull方式，异常处理只需要由slave节点控制。</strong></p>
-<p><strong>整体的架构比较简单，slave端使用RsyncClient拉取文件，master端使用RsyncServer监听端口并处理请求。</strong></p>
-<p><strong>slave端整体的执行流程是：</strong></p>
-<ol>
-<li><strong>当slave节点上slot状态流转到kWaitDBSync后，初始化RsyncClient。RsyncClient在初始化阶段完成recover操作，请求master节点获取本次数据传输的元信息。</strong></li>
-<li><strong>如果初始化成功，启动RsyncClient多个后台下载线程从master下载引擎文件。</strong></li>
-<li><strong>当所有引擎文件下载完成，slave校验info文件，changedb，更新slot状态为kTryConnect。</strong></li>
-</ol>
-<p><strong>master端处理逻辑较为简单，只需要保证在dump完成之后根据请求中指定的文件名和offset从磁盘中读取文件然后将数据传回给slave即可。</strong></p>
-<h3 id="数据传输"><a href="#数据传输" class="headerlink" title="数据传输"></a>数据传输</h3><p><strong>新方案中使用protobuf方式序列化待传输数据，slave节点主动向master拉取文件内容。每个文件可能被拆分为多次网络请求。具体每次请求中传输多少数据量根据限速策略进行调整。proto文件定义如下所示。</strong></p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br></pre></td><td class="code"><pre><span class="line">syntax = &quot;proto2&quot;;</span><br><span class="line">package RsyncService;</span><br><span class="line">​</span><br><span class="line">enum Type &#123;</span><br><span class="line">    kRsyncMeta = 1;</span><br><span class="line">    kRsyncFile = 2;</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line">enum StatusCode &#123;</span><br><span class="line">    kOk  = 1;</span><br><span class="line">    kErr = 2;</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line">message MetaResponse &#123;</span><br><span class="line">    repeated string filenames = 1;</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line">message FileRequest &#123;</span><br><span class="line">    required string filename = 1;</span><br><span class="line">    required uint64 count = 2;</span><br><span class="line">    required uint64 offset = 3;</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line">message FileResponse &#123;</span><br><span class="line">    required int32 eof = 1;</span><br><span class="line">    required uint64 count = 2;</span><br><span class="line">    required uint64 offset = 3;</span><br><span class="line">    required bytes data = 4;</span><br><span class="line">    required string checksum = 5;</span><br><span class="line">    required string filename = 6;</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line">message RsyncRequest &#123;</span><br><span class="line">    required Type type = 1;</span><br><span class="line">    required int32 reader_index = 2;</span><br><span class="line">    required string db_name = 3;</span><br><span class="line">    required uint32 slot_id = 4;</span><br><span class="line">    optional FileRequest file_req = 5;</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line">message RsyncResponse &#123;</span><br><span class="line">    required Type type = 1;</span><br><span class="line">    required int32 reader_index = 2;</span><br><span class="line">    required string snapshot_uuid = 3;</span><br><span class="line">    required string db_name = 4;</span><br><span class="line">    required uint32 slot_id = 5;</span><br><span class="line">    required StatusCode code = 6;</span><br><span class="line">    optional MetaResponse meta_resp = 7;</span><br><span class="line">    optional FileResponse file_resp = 8;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p><strong>请求包括两种类型，一个是获取元信息，slave获取master dump相关信息，包括snapshot_uuid（唯一关联一个dump），待传输的文件集合。另一个是拉取具体的文件，通过请求参数中的filename, offset和count指定了要获取的文件片段。回包中包含了传输数据内容，所属文件名以及offset用于slave端过滤掉无效的数据包，如延时到达的回包或重复的回包。为加快数据传输的速度，可以在配置文件中修改后台拉取文件的线程数，也可以通过动态调整限速策略控制数据传输速度。</strong></p>
-<h3 id="下载限速"><a href="#下载限速" class="headerlink" title="下载限速"></a>下载限速</h3><p><strong>文件下载限速的逻辑，参考braft中install_snapshot的限速策略实现了throttle类，总体思路是限制slave节点单位时间内下载的数据量。具体使用上，分别设置每秒最多下载的字节数和统计周期。默认的slave节点单次请求的数据量最多是4MB，发送请求之前会先从throttle类获取当前统计周期中还可以发送的数据量，如果可以发送的数据量为0，sleep 一个统计周期。如果不为0，修改请求中需要获取的数据量。当请求收到回包之后，用实际收到的回包中的数据量更新throttle中的余额。</strong></p>
-<p><strong>注：图中集中在增量同步之前阶段的状态转移，未包含请求错误导致状态流转到kError的情况，也没有包括连接keepalive超时或连接断开时状态被重置为kNoConnect的过程。</strong><br><img src="/../images/%E5%85%A8%E9%87%8F%E5%A4%8D%E5%88%B6/%E5%85%A8%E9%87%8F%E5%A4%8D%E5%88%B62.png" alt="pika_server状态流转图"></p>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://example.com/2023/12/10/Pika-%E5%85%A8%E9%87%8F%E5%A4%8D%E5%88%B6/" data-id="clpyvhct60000v0yu6don6inn" data-title="Pika 全量复制" class="article-share-link"><span class="fa fa-share">Share</span></a>
-      
-      
-      
-    </footer>
-  </div>
-  
-</article>
-
-
-
-  
-    <article id="post-linux排查问题常用工具" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
-  <div class="article-meta">
-    <a href="/2023/12/04/linux%E6%8E%92%E6%9F%A5%E9%97%AE%E9%A2%98%E5%B8%B8%E7%94%A8%E5%B7%A5%E5%85%B7/" class="article-date">
-  <time class="dt-published" datetime="2023-12-04T12:58:11.000Z" itemprop="datePublished">2023-12-04</time>
-</a>
-    
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="p-name article-title" href="/2023/12/04/linux%E6%8E%92%E6%9F%A5%E9%97%AE%E9%A2%98%E5%B8%B8%E7%94%A8%E5%B7%A5%E5%85%B7/">linux排查问题常用工具</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="e-content article-entry" itemprop="articleBody">
-      
-        <h2 id="Valgrind查看内存泄漏"><a href="#Valgrind查看内存泄漏" class="headerlink" title="Valgrind查看内存泄漏"></a>Valgrind查看内存泄漏</h2><h3 id="安装"><a href="#安装" class="headerlink" title="安装"></a>安装</h3><p><code>yum install valgrind</code></p>
-<h3 id="常用命令"><a href="#常用命令" class="headerlink" title="常用命令"></a>常用命令</h3><p><code>valgrind --leak-check=full --tool=memcheck --log-file=valgrind_output.txt /home/wuxianrong/pika1/pika/output/pika -c /home/wuxianrong/conf/pika9981.conf</code></p>
-<p><code>com</code>mand&#x3D;”valgrind –leak-check&#x3D;full –leak-resolution&#x3D;high “<code>     </code>command&#x3D;”${command} –log-file&#x3D;valgind_info –num-callers&#x3D;20 “<code>     </code>command&#x3D;”${command} –show-reachable&#x3D;yes –tool&#x3D;memcheck “<code>     </code>command&#x3D;”${command} –track-fds&#x3D;yes –track-origins&#x3D;yes “<code>     </code>command&#x3D;”${command} –trace-syscalls&#x3D;yes -v ${mltf}”<code>     </code>if [ “${dbg}” &#x3D;&#x3D; “v” ] ; then<code>       </code>echo “you should start the command &quot;gdb ${mltf}&quot; in another shell and then give gdb the command &quot;target remote | vgdb&quot;“<code>       </code>echo -e “\n”<code>       </code>command&#x3D;”valgrind –leak-check&#x3D;full –tool&#x3D;memcheck –trace-syscalls&#x3D;no –vgdb&#x3D;full –vgdb-error&#x3D;0 -v ${mltf}”<code>     fi</code></p>
-<h2 id="perf火焰图查看cpu过高问题"><a href="#perf火焰图查看cpu过高问题" class="headerlink" title="perf火焰图查看cpu过高问题"></a>perf火焰图查看cpu过高问题</h2><ol>
-<li>sudo perf record -F 99 -p 12356 –call-graph dwarf -g – sleep 60</li>
-</ol>
-<p>采样生成perf.data</p>
-<ol>
-<li>sudo perf script -i perf.data &amp;&gt; perf.unfold 生成折叠后的调用栈</li>
-<li>.&#x2F;stackcollapse-perf.pl perf.unfold &amp;&gt; perf.folded</li>
-<li>.&#x2F;flamegraph.pl perf.folded &gt; perf.svg</li>
-</ol>
-<h2 id="GDB调试"><a href="#GDB调试" class="headerlink" title="GDB调试"></a>GDB调试</h2>
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://example.com/2023/12/04/linux%E6%8E%92%E6%9F%A5%E9%97%AE%E9%A2%98%E5%B8%B8%E7%94%A8%E5%B7%A5%E5%85%B7/" data-id="clpqx65jg0000wztb7xmucrnn" data-title="linux排查问题常用工具" class="article-share-link"><span class="fa fa-share">Share</span></a>
-      
-      
-      
-    </footer>
-  </div>
-  
-</article>
-
-
-
-  
-    <article id="post-Pika-分布式集群详解" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
-  <div class="article-meta">
-    <a href="/2023/12/04/Pika-%E5%88%86%E5%B8%83%E5%BC%8F%E9%9B%86%E7%BE%A4%E8%AF%A6%E8%A7%A3/" class="article-date">
-  <time class="dt-published" datetime="2023-12-04T10:12:56.000Z" itemprop="datePublished">2023-12-04</time>
-</a>
-    
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="p-name article-title" href="/2023/12/04/Pika-%E5%88%86%E5%B8%83%E5%BC%8F%E9%9B%86%E7%BE%A4%E8%AF%A6%E8%A7%A3/">Pika 分布式集群详解</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="e-content article-entry" itemprop="articleBody">
-      
-        <h3 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h3><p>pika3.5.0版本发布了分布式集群方案，基于codis+pika-server实现，已经在360内部搜索团队线上使用，稳定性和性能都非常优秀。本文主要介绍分布式集群的架构和部署方案。</p>
-<h3 id="分布式架构解析"><a href="#分布式架构解析" class="headerlink" title="分布式架构解析"></a>分布式架构解析</h3><p>pika分布式集群基于codis架构进行改造设计，架构图如下所示：</p>
-<p><img src="/../images/cluster/%E5%88%86%E5%B8%83%E5%BC%8F%E9%9B%86%E7%BE%A4%E6%9E%B6%E6%9E%84.png" alt="分布式集群架构图"></p>
-<p>pika分布式集群主要 由以下这些组件组成：</p>
-<ul>
-<li><p><strong>Pika Server</strong>：pika3.5.0版本，与单机版模式及架构保持一致。</p>
-</li>
-<li><p><strong>Codis Proxy</strong>：客户端直接连接 codis-proxy，codis-proxy 手动用户请求后，会通过计算 hash 值将请求转发到指定的 Pika Server 去执行。</p>
-</li>
-<li><p>对于同一个业务集群而言，可以同时部署多个 codis-proxy 实例；</p>
-</li>
-<li><p>不同 codis-proxy 之间由 codis-dashboard 保证状态同步。</p>
-</li>
-<li><p><strong>Codis Dashboard</strong>：集群管理工具，支持 codis-proxy、pika-server 的添加、删除，以及据迁移等操作。在集群状态发生改变时，codis-dashboard 维护集群下所有 codis-proxy 的状态的一致性。</p>
-</li>
-<li><p>对于同一个业务集群而言，同一个时刻 codis-dashboard 只能有 0个或者1个；</p>
-</li>
-<li><p>所有对集群的修改都必须通过 codis-dashboard 完成。</p>
-</li>
-<li><p><strong>Codis FE</strong>：集群管理界面。</p>
-</li>
-<li><p>多个集群实例共享可以共享同一个前端展示页面；</p>
-</li>
-<li><p>通过配置文件管理后端 codis-dashboard 列表，配置文件可自动更新。</p>
-</li>
-<li><p><strong>Codis Etcd</strong>:</p>
-</li>
-</ul>
-<p>​        codis-etcd主要用于记录元数据信息，为保证高可用，建议etcd部署为3节点。</p>
-<h3 id="Sentinel主从切换"><a href="#Sentinel主从切换" class="headerlink" title="Sentinel主从切换"></a>Sentinel主从切换</h3><p>   为了方便运维管理，本次版本支持sentinel自动主从切换，当集群主挂的时候会备升主，提供了主节点故障自愈的能力。</p>
-<h3 id="部署方式"><a href="#部署方式" class="headerlink" title="部署方式"></a>部署方式</h3><p>机器配置可以根据自身情况选择：</p>
-<p>搜索部门节点分配如下：</p>
-<table>
-<thead>
-<tr>
-<th>组件</th>
-<th>节点个数(可以根据需求调整)</th>
-<th>实例规格(可以根据需求调整)</th>
-</tr>
-</thead>
-<tbody><tr>
-<td><strong>pika server</strong></td>
-<td>12主12从</td>
-<td>每个实例：20核，32G内存，200G磁盘</td>
-</tr>
-<tr>
-<td><strong>Codis FE</strong></td>
-<td>1个节点</td>
-<td>1个节点 2核4G</td>
-</tr>
-<tr>
-<td><strong>Codis Dashboard</strong></td>
-<td>1个节点</td>
-<td>1个节点 2核4G</td>
-</tr>
-<tr>
-<td><strong>Codis Etcd</strong></td>
-<td>3个节点</td>
-<td>3个节点 2核4G</td>
-</tr>
-<tr>
-<td><strong>Codis Proxy</strong></td>
-<td>4个节点</td>
-<td>4个节点 2核4G</td>
-</tr>
-</tbody></table>
-<p>集群创建部署顺序：</p>
-<p>1.启动pika</p>
-<p>2.建立pika主从关系<br>3.启动codis etcd<br>4.启动codis dashboard<br>5.启动codis. proxy<br>6.启动codis fe<br>7 绑定pika+codis</p>
-<p>绑定codis+pika需要在dashboard中进行操作，操作顺序如下：</p>
-<p>1.添加group(注意：pika1主一从为一个group)</p>
-<p><img src="/../images/cluster/%E6%B7%BB%E5%8A%A0group.png" alt="添加group"></p>
-<p>2.添加pikaserver</p>
-<p><img src="/../images/cluster/%E6%B7%BB%E5%8A%A0pikaserver.png" alt="添加Pikaserver"><br>3.分配slots:</p>
-<p><img src="/../images/cluster/%E5%88%86%E9%85%8Dslots.png" alt="分配slots"><br>至此，pika和codis已经绑定完毕，我们可以用proxy的vip vport进行访问。</p>
-<h2 id="快速启动脚本"><a href="#快速启动脚本" class="headerlink" title="快速启动脚本"></a>快速启动脚本</h2><p>pika-codis源码(路径:)中 admin 文件夹提供了一系列脚本以便快速启动、停止各个组件，提高运维效率。</p>
-<h3 id="启动codis-dashboard"><a href="#启动codis-dashboard" class="headerlink" title="启动codis-dashboard"></a>启动codis-dashboard</h3><p>使用 codis-dashboard-admin.sh 脚本启动 dashboard，并查看 dashboard 日志确认启动是否有异常。</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">./admin/codis-dashboard-admin.sh start</span><br><span class="line"> tail -100 ./log/codis-dashboard.log.2017-04-08</span><br></pre></td></tr></table></figure>
-
-
-
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">2017/04/08 15:16:57 fsclient.go:197: [INFO] fsclient - create /codis3/codis-demo/topom OK</span><br><span class="line">2017/04/08 15:16:57 main.go:140: [WARN] [0xc42025f7a0] dashboard is working ...</span><br><span class="line">2017/04/08 15:16:57 topom.go:424: [WARN] admin start service on [::]:18080</span><br></pre></td></tr></table></figure>
-
-<p>快速启动集群元数据存储使用 filesystem，默认数据路径保存在 &#x2F;tmp&#x2F;codis，若启动失败，请检查当前用户是否对该路径拥有读写权限。</p>
-<h3 id="启动codis-proxy"><a href="#启动codis-proxy" class="headerlink" title="启动codis-proxy"></a>启动codis-proxy</h3><p>使用 codis-proxy-admin.sh 脚本启动 codis-proxy，并查看 proxy 日志确认启动是否有异常。</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">./admin/codis-proxy-admin.sh start</span><br><span class="line">tail -100 ./log/codis-proxy.log.2017-04-08</span><br></pre></td></tr></table></figure>
-
-
-
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">2017/04/08 15:39:37 proxy.go:293: [WARN] [0xc4200df760] set sentinels = []</span><br><span class="line">2017/04/08 15:39:37 main.go:320: [WARN] rpc online proxy seems OK</span><br><span class="line">2017/04/08 15:39:38 main.go:210: [WARN] [0xc4200df760] proxy is working ...</span><br></pre></td></tr></table></figure>
-
-<h3 id="启动codis-server"><a href="#启动codis-server" class="headerlink" title="启动codis-server"></a>启动codis-server</h3><p>使用 codis-server-admin.sh 脚本启动 codis-server，并查看 redis 日志确认启动是否有异常。</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">./admin/codis-server-admin.sh start</span><br><span class="line">tail -100 /tmp/redis_6379.log</span><br></pre></td></tr></table></figure>
-
-
-
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">5706:M 08 Apr 16:04:11.748 * DB loaded from disk: 0.000 seconds</span><br><span class="line">5706:M 08 Apr 16:04:11.748 * The server is now ready to accept connections on port 6379</span><br></pre></td></tr></table></figure>
-
-<p>redis.conf 配置中 pidfile、logfile 默认保存在 &#x2F;tmp 目录，若启动失败，请检查当前用户是否有该目录的读写权限。</p>
-<h3 id="启动codis-fe"><a href="#启动codis-fe" class="headerlink" title="启动codis-fe"></a>启动codis-fe</h3><p>使用 codis-fe-admin.sh 脚本启动 codis-fe，并查看 fe 日志确认启动是否有异常。</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">./admin/codis-fe-admin.sh start</span><br><span class="line">tail -100 ./log/codis-fe.log.2017-04-08</span><br></pre></td></tr></table></figure>
-
-
-
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">2017/04/08 16:12:13 main.go:100: [WARN] set ncpu = 1</span><br><span class="line">2017/04/08 16:12:13 main.go:103: [WARN] set listen = 0.0.0.0:9090</span><br><span class="line">2017/04/08 16:12:13 main.go:115: [WARN] set assets = /home/codis/go/src/github.com/CodisLabs/codis/admin/../bin/assets</span><br><span class="line">2017/04/08 16:12:13 main.go:153: [WARN] set --filesystem = /tmp/codis</span><br></pre></td></tr></table></figure>
-
-
-
-<h3 id="压测性能展示"><a href="#压测性能展示" class="headerlink" title="压测性能展示"></a>压测性能展示</h3><p>部署12个主12个从实例：</p>
-<p>集群qps:</p>
-<p><img src="/../images/cluster/%E6%80%A7%E8%83%BD%E5%B1%95%E7%A4%BA.png" alt="压测性能展示"></p>
-<p>读写耗时：</p>
-<p><img src="/../images/cluster/%E8%AF%BB%E5%86%99%E8%80%97%E6%97%B6.png" alt="读写耗时"></p>
-<p>参数性能调优：</p>
-<p>我们发现将thread_num调大，将thread_pool_size调小，会导致</p>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://example.com/2023/12/04/Pika-%E5%88%86%E5%B8%83%E5%BC%8F%E9%9B%86%E7%BE%A4%E8%AF%A6%E8%A7%A3/" data-id="clpqrcvb00000gjtbdr6teere" data-title="Pika 分布式集群详解" class="article-share-link"><span class="fa fa-share">Share</span></a>
-      
-      
-      
-    </footer>
-  </div>
-  
-</article>
-
-
-
-  
 
 
 </section>
