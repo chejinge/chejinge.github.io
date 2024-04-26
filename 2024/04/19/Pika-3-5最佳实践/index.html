@@ -14,7 +14,7 @@
 <meta property="og:description" content="Pika 是 360 热门的 c++开源项目，基于 rocksdb 开发的大容量类 Redis 存储，力求在完全兼容 Redis 协议、继承 Redis 便捷运维设计的前提下通过持久化存储方式解决 Redis 在大容量场景下主从同步代价高、恢复时间慢、单线程相对脆弱、内存成本高等问题。">
 <meta property="og:locale" content="en_US">
 <meta property="article:published_time" content="2024-04-19T11:39:40.000Z">
-<meta property="article:modified_time" content="2024-04-19T11:45:31.537Z">
+<meta property="article:modified_time" content="2024-04-26T10:07:16.794Z">
 <meta property="article:author" content="John Doe">
 <meta name="twitter:card" content="summary">
   
@@ -107,8 +107,7 @@
 <h2 id="Pika-最佳实践之九"><a href="#Pika-最佳实践之九" class="headerlink" title="Pika 最佳实践之九"></a>Pika 最佳实践之九</h2><p>Pika 的内存占用主要集中在 sst 文件的 cache 和连接申请内存，而通常连接申请内存会比 sst 的 cache 要大很多，Pika 目前已支持连接申请内存的动态调整、回收，因此连接占用的总内存大小是可以粗略估算的，如果你的 Pika 内存占用远超预估或大于 10g，那么可能为你当前使用的版本存在内存泄漏问题，尝试依次执行命令 client kill all 和 tcmalloc free 来对连接内存进行强制回收，如果效果不好请升级到最新版本</p>
 <h2 id="Pika-最佳实践之十"><a href="#Pika-最佳实践之十" class="headerlink" title="Pika 最佳实践之十"></a>Pika 最佳实践之十</h2><p>非常不建议单机运行 Pika，最简集群状态应为一主一从，而主从集群的容灾模式有很多种，可以考虑使用 lvs、vip 漂移、配置管理中间件等</p>
 <h2 id="Pika-最佳实践之十一"><a href="#Pika-最佳实践之十一" class="headerlink" title="Pika 最佳实践之十一"></a>Pika 最佳实践之十一</h2><p>如果你的 Pika 单机运行（非主从集群），并部署在可靠的存储上，那么可以考虑通过关闭 binlog（将 write-binlog 参数设置为 no）来提高写入性能，不过我们并不推荐单机运行，至少应当有一个从库用于容灾</p>
-<h2 id="Pika-最佳实践之十二"><a href="#Pika-最佳实践之十二" class="headerlink" title="Pika 最佳实践之十二"></a>Pika 最佳实践之十二</h2><p>如果你的 Pika 是主从模式或者集群模式，并部署在可靠的存储上，我们在 3.5.2 版本提供了命令关闭 WAL 的功能(DisableWAL true)，如果你的 Pika 实例出现间断性的写性能阻塞的情况，你可以通过关闭 WAL 命令暂时关闭 WAL，这种方式有断电情况下数据丢失的风险，如果业务对数据完整性要求较高时，我们不建议关闭 WAL</p>
-<p>##Pika 最佳实践之十三<br>Pika 的数据目录中有大量的 sst 文件，这些文件随着 Pika 数据量的增加而增加，因此你需要为 Pika 配置一个更大的 open_file_limit 避免不够用，如果你不希望 Pika 占用太多的文件描述符，可以通过适当增大单个 sst 的体积来降低 sst 的总数量，对应参数为 target-file-size-base</p>
+<h2 id="Pika-最佳实践之十二"><a href="#Pika-最佳实践之十二" class="headerlink" title="Pika 最佳实践之十二"></a>Pika 最佳实践之十二</h2><p>如果你的 Pika 是主从模式或者集群模式，并部署在可靠的存储上，我们在 3.5.2 版本提供了命令关闭 WAL 的功能(DisableWAL true)，如果你的 Pika 实例出现间断性的写性能阻塞的情况，你可以通过关闭 WAL 命令暂时关闭 WAL，这种方式有断电情况下数据丢失的风险，如果业务对数据完整性要求较高时，我们不建议关闭 WAL<br>##Pika 最佳实践之十三<br>Pika 的数据目录中有大量的 sst 文件，这些文件随着 Pika 数据量的增加而增加，因此你需要为 Pika 配置一个更大的 open_file_limit 避免不够用，如果你不希望 Pika 占用太多的文件描述符，可以通过适当增大单个 sst 的体积来降低 sst 的总数量，对应参数为 target-file-size-base</p>
 <h2 id="Pika-最佳实践之十四"><a href="#Pika-最佳实践之十四" class="headerlink" title="Pika 最佳实践之十四"></a>Pika 最佳实践之十四</h2><p>不要修改 log 目录中的 write2file 文件和 manifest，它们是同步相关的重要文件，write2file 为 binlog 角色，而 manifest 则用来确保实例重启后的 binlog 续写及实例为从库时帮助同步中断重连后续传</p>
 <h2 id="Pika-最佳实践之十五"><a href="#Pika-最佳实践之十五" class="headerlink" title="Pika 最佳实践之十五"></a>Pika 最佳实践之十五</h2><p>自 Pika 3.5.0 之后的版本，我们摒弃了用 rsync 进程进行全量同步的方式，在 Pika 进程内部实现自研 rsync, 我们提供了 rsync 的传输限速参数throttle-bytes-per-second 和并发传输线程数 max-rsync-parallel-num调整参数，throttle-bytes-per-second 参数的单位是 mb, 我们建议在千兆环境中该参数设置不应高于 45，而在万兆环境中不应高于 500，这样可以避免 Pika 在全量同步的时候将所在服务器网卡用尽而影响到 Pika 服务的性能。Pika 最佳实践之十六</p>
 <p>在 Pika 中执行 key *并不会造成 Pika 阻塞（Pika 是多线程的），但在存在巨量 key 的场景下可能会造成临时占用巨量内存（这些内存用于该连接存放 key *的执行结果，会在 key *执行完毕后释放），因此使用 keys *一定要小心谨慎</p>
@@ -125,7 +124,7 @@
 <h2 id="Pika-最佳实践之二十八"><a href="#Pika-最佳实践之二十八" class="headerlink" title="Pika 最佳实践之二十八"></a>Pika 最佳实践之二十八</h2><p>备份是以硬链接 db 目录中的 sst 的方式产生的，因此在存在备份文件的情况下，一旦执行全量 compact 由于 Pika db 目录中的所有 sst 都会被 compact“清洗”一遍（逐步将所有老的 sst 删除替换成新的 sst），这将造成备份硬链接文件的体积变为真实体积，极端情况下备份文件会额外占用一倍的空间，因此如果你的磁盘空余空间不大，那么在执行全量 compact 之前最好删除备份</p>
 <h2 id="Pika-最佳实践之二十九"><a href="#Pika-最佳实践之二十九" class="headerlink" title="Pika 最佳实践之二十九"></a>Pika 最佳实践之二十九</h2><p>Pika 和 Redis 一样支持慢日志功能并可通过 slowlog 命令查看，但我们知道 slowlog 的存储是有上限的，这个上限取决于你的配置，如果配置过大会造成 slowlog 占用太多内存，而 Pika 允许将慢日志记录到 pika.ERROR 日志中用于追溯、分析，该功能需要将 slowlog-write-errorlog 设置为 yes</p>
 <h2 id="Pika-最佳实践之三十"><a href="#Pika-最佳实践之三十" class="headerlink" title="Pika 最佳实践之三十"></a>Pika 最佳实践之三十</h2><p>Pika 3.5.2 以后的版本支持冷热数据分离的能力，我们通过在 Pika 存储上层增加缓存层，将用户访问的热数据放在缓存层，冷数据放在磁盘，减少查询磁盘的次数，提升服务的读性能，不论你的 Pika 使用的是主从复制模式还是集群模式，你可以通过 cache-mode 置为1 ，并设置缓存的大小和个数提升实例的读性能，如果实例内存较小，不足以支撑缓存层的资源耗费，你可以选择将cache-mode设置成为0将缓存关闭掉</p>
-<h2 id="Pika-最佳实践之三十一"><a href="#Pika-最佳实践之三十一" class="headerlink" title="Pika 最佳实践之三十一"></a>Pika 最佳实践之三十一</h2><p>Pika 3.5.3 以后的版本支持了 ACL 功能，设置用户密码与前面的方式发生了变化，我们废弃了userpass 和 requiress pass，认证方式和 redis 保持一致，你只需要在 user 中按照 ACL 规则</p>
+<h2 id="Pika-最佳实践之三十一"><a href="#Pika-最佳实践之三十一" class="headerlink" title="Pika 最佳实践之三十一"></a>Pika 最佳实践之三十一</h2><p>Pika 3.5.3 以后的版本支持了 ACL 功能，设置用户密码与前面的方式发生了变化，我们兼容了以前的认证方式，如果你没有ACL需求，你可以按照以前的认证方式使用，ACL的认证方式和 redis 保持一致，你只需要在 user 中按照 ACL 规则配置config文件，就可以根据租户做不同的访问。</p>
 <h2 id="Pika-最佳实践之三十二"><a href="#Pika-最佳实践之三十二" class="headerlink" title="Pika 最佳实践之三十二"></a>Pika 最佳实践之三十二</h2><p>Pika 3.5.3 以后的</p>
 <p>我们会随着 Pika 版本的不断更新及用户的反馈定期更新 Pika 最佳实践</p>
 <p>–未完待续</p>
