@@ -13,10 +13,17 @@
 <meta property="og:site_name" content="Hexo">
 <meta property="og:description" content="Codis Redis 集群方案Codis 是一个分布式 Redis 解决方案，与官方的去中心的集群模式不同，Codis 采用的是 Proxy-based 的方案。Codis 由 codis-admin、codis-fe、codis-dashboard、codis-proxy、codis-server等四个组件构成。 codis-admin 是集群管理的命令行工具，用于控制 codis-proxy">
 <meta property="og:locale" content="en_US">
+<meta property="og:image" content="http://example.com/images/failover/codis%E6%9E%B6%E6%9E%84.png">
+<meta property="og:image" content="http://example.com/images/failover/codis-pika-sentinel.png">
+<meta property="og:image" content="http://example.com/images/failover/codis-dashboard.png">
+<meta property="og:image" content="http://example.com/images/failove/check-state.png">
+<meta property="og:image" content="http://example.com/images/failover/update-map.png">
+<meta property="og:image" content="http://example.com/images/failover/sentinel-new.png">
 <meta property="article:published_time" content="2024-04-28T03:54:23.000Z">
-<meta property="article:modified_time" content="2024-04-28T11:01:05.763Z">
+<meta property="article:modified_time" content="2024-04-28T11:40:57.817Z">
 <meta property="article:author" content="John Doe">
 <meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://example.com/images/failover/codis%E6%9E%B6%E6%9E%84.png">
   
     <link rel="alternate" href="/atom.xml" title="Hexo" type="application/atom+xml">
   
@@ -100,18 +107,19 @@
 <p>codis-dashboard 是集群管理工具，支持 codis-proxy、codis-server 的添加、删除，以及据迁移等操作，在集群状态发生改变时，codis-dashboard 维护集群下所有 codis-proxy 的状态的一致性。</p>
 <p>codis-proxy 客户端连接的Redis代理服务，本身实现了Redis协议，是一个无状态的服务。</p>
 <p>codis-server 是 codis 维护的 redis 分支，加入了 slot 的支持和原子的数据迁移指令。</p>
-<p>Redis 集群的高可用是由哨兵集群来保证的，那么 codis-proxy 是如何感知 Redis 主机故障，然后切换新主保证服务高可用的呢? </p>
+<p><img src="/../images/failover/codis%E6%9E%B6%E6%9E%84.png" alt="codis架构"><br>Redis 集群的高可用是由哨兵集群来保证的，那么 codis-proxy 是如何感知 Redis 主机故障，然后切换新主保证服务高可用的呢? </p>
 <p>Codis 解决 Redis failover 问题采用的是 Redis 官方的 redis-sentinel 解决方案，如上图所示。</p>
 <p>codis-proxy 本身会监听 sentinle 集群的 +switch-master 事件，该事件发出，意味着 redis 集群主机出现问题，sentinel 集群开始进行选举并切换主机，proxy 监听了 sentinel 的主从切换事件，收到主从切换事件之后，proxy 会做一个动作，就是把所有 sentinel 上的集群所感知的当前认为的主机拉取出来，选取过半 sentinel 认为的主机当作所在 codis-group 的主节点。</p>
 <p>讲到这里，大家可能会忽略一个问题，就是配置存储，配置中心的存储还是旧的主机，一旦proxy重起，那拉取的依旧是故障的主机，其实dashboard和proxy也做了一样的事情，收到主从切换事件之后，就会将新主持久化到storage中。</p>
-<h2 id="Pika-3-5-2-版本-Codis-Sentinel-工作原理"><a href="#Pika-3-5-2-版本-Codis-Sentinel-工作原理" class="headerlink" title="Pika 3.5.2 版本 Codis Sentinel 工作原理"></a>Pika 3.5.2 版本 Codis Sentinel 工作原理</h2><p>pika 同样采用 codis 实现了集群功能，但是 Pika Codis 在解决 Failover 问题采用了不同的方案。Pika Codis 将 Sentinel 能力集成到了 codis-dashboard 中，当 codis-dashboard 发现 pika 节点异常后，会自动发起选举新主，将旧主降级为从节点，并将变更的 Group  信息持久化到 etcd 中，然后通知 codis-proxy 更新 Group 信息。</p>
-<p>接下来重点介绍一下 codis-dashboard 中的 sentinel 是如何工作的。</p>
+<h2 id="Pika-3-5-2-版本-Codis-Sentinel-工作原理"><a href="#Pika-3-5-2-版本-Codis-Sentinel-工作原理" class="headerlink" title="Pika 3.5.2 版本 Codis Sentinel 工作原理"></a>Pika 3.5.2 版本 Codis Sentinel 工作原理</h2><p>pika 同样采用 codis 实现了集群功能，但是 Pika Codis 在解决 Failover 问题采用了不同的方案。Pika Codis 将 Sentinel 能力集成到了 codis-dashboard 中，当 codis-dashboard 发现 pika 节点异常后，会自动发起选举新主，将旧主降级为从节点，并将变更的 Group  信息持久化到 etcd 中，然后通知 codis-proxy 更新 Group 信息。<br><img src="/../images/failover/codis-pika-sentinel.png" alt="codis-pika-sentinel"></p>
+<p>接下来重点介绍一下 codis-dashboard 中的 sentinel 是如何工作的。<br><img src="/../images/failover/codis-dashboard.png" alt="codis-dashboard"></p>
 <p>codis-dashboard 启动时，会有两个协程用于周期性查询所有 pika server 的状态。CheckMastersAndSlavesState 会每 5 秒执行一次 info replication 命令，用于检查所有 GroupServer（即 pika server，包含 Master 和 Slave）的状态。CheckMastersAndSlavesState 发现有节点异常，会将该节点对应的 GroupServer 中的 State 状态设置为预离线（GroupServerStateSubjectiveOffline）状态。 CheckPreOffineMastersState 会每 1 秒执行执行一次 info replication 命令，针对所有 Group 的 Master 节点，并且 Master 处于异常状态（State异常状态有 GroupServerStateSubjectiveOffline 或 GroupServerStateOffline，GroupServerStateNormal 为正常状态）的节点再进行存活检测，如果再次检测 5 次，仍为异常状态，则将 GroupServer 的状态置为离线（GroupServerStateOffline）状态 。</p>
+<p><img src="/../images/failove/check-state.png" alt="check-state"></p>
 <p>经过多次 info 检查，确认 Group 的 Master 离线后，将会发起自动主从切换。选取新主的策略为优先选择状态正常，pika server 中 repl_offset （Master 节点取 master_repl_offset，Slave 节点取 slave_repl_offset）最大的作为新的 Master 节点。Codis 是如何区分主从节点的？在 Codis Group 中有个 GroupServer 数组，默认将第 0 个位置的 GroupServer 作为 Master 节点。Codis 主从切换是将新主与第 0 个位置的 GroupServer 进行替换，从而实现主从切换。</p>
-<p>完成主从切换后，会将最新的 Group 视图持久化存储到 etcd 中，最后再通知所有 codis-proxy 组件。</p>
+<p>完成主从切换后，会将最新的 Group 视图持久化存储到 etcd 中，最后再通知所有 codis-proxy 组件。<br><img src="/../images/failover/update-map.png" alt="update-map"></p>
 <h2 id="如何解决主从切换后，旧主重新恢复服务，并将流程自动化"><a href="#如何解决主从切换后，旧主重新恢复服务，并将流程自动化" class="headerlink" title="如何解决主从切换后，旧主重新恢复服务，并将流程自动化"></a>如何解决主从切换后，旧主重新恢复服务，并将流程自动化</h2><p>目前存在的主要问题是旧节点恢复服务后主从关系有可能仍停留在以前的旧配置，没有更新成最新的配置。现在的解决方法是需要运维人员手工操作，运维复杂，操作复杂（多个操作步骤），因此，运维人员希望可以将恢复流程自动化。</p>
 <p>下面介绍一下如何在 codis-dashboard 中将故障恢复流程自动化。</p>
-<p>根据 codis-dashboard 现有逻辑，新增一个CheckOfflineMastersAndSlavesState 协程，由该协程周期性（每2秒执行1次）检查所有已经客观下线节点的状态信息，流程如下图，向已客观下线的节点发送  info replication 命令，探测服务是否恢复。如果命令执行成功，则认为服务恢复。服务恢复后，先检查节点最新的  info replication 命令中记录的，与 codis-dashboard 记录的主从复制关系是否一致。如果不一致，就需要对该 GroupServer 执行 slaveof 命令，建立新的主从关系。新的主从关系建立后，更新 GroupServer 的 state 和 role (有可能是旧的Master节点，需要将其改为 Slave) ，然后持久化新的 Group 信息，并重置 codis-dashboard 的 Group 缓存信息，最后通知所有 codis-proxy 更新信息。</p>
+<p>根据 codis-dashboard 现有逻辑，新增一个CheckOfflineMastersAndSlavesState 协程，由该协程周期性（每2秒执行1次）检查所有已经客观下线节点的状态信息，流程如下图，向已客观下线的节点发送  info replication 命令，探测服务是否恢复。如果命令执行成功，则认为服务恢复。服务恢复后，先检查节点最新的  info replication 命令中记录的，与 codis-dashboard 记录的主从复制关系是否一致。如果不一致，就需要对该 GroupServer 执行 slaveof 命令，建立新的主从关系。新的主从关系建立后，更新 GroupServer 的 state 和 role (有可能是旧的Master节点，需要将其改为 Slave) ，然后持久化新的 Group 信息，并重置 codis-dashboard 的 Group 缓存信息，最后通知所有 codis-proxy 更新信息。<br><img src="/../images/failover/sentinel-new.png" alt="sentinel-new"></p>
 <p>强制执行 slaveof -f 命令，需要确保 pika 能够建立新的主从关系，并重新进行全量同步。— 已确认，pika 会执行全量同步</p>
 
       
@@ -131,7 +139,7 @@
       <strong class="article-nav-caption">Newer</strong>
       <div class="article-nav-title">
         
-          git
+          git教程
         
       </div>
     </a>
@@ -177,7 +185,7 @@
       <ul>
         
           <li>
-            <a href="/2024/04/28/git/">git</a>
+            <a href="/2024/04/28/git/">git教程</a>
           </li>
         
           <li>
