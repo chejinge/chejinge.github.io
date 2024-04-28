@@ -6,15 +6,15 @@
   
   <title>Hexo</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-  <meta name="description" content="git各个命令的详细使用方法参考git-docs。 Table of Contents git Table of Contents add archive blame branch checkout cherry-pick clone commit config diff fetch for-each-ref github init log &amp; show merge mv pull pus">
+  <meta name="description" content="git各个命令的详细使用方法参考git-docs。">
 <meta property="og:type" content="article">
 <meta property="og:title" content="Hexo">
 <meta property="og:url" content="http://example.com/2024/04/28/git/index.html">
 <meta property="og:site_name" content="Hexo">
-<meta property="og:description" content="git各个命令的详细使用方法参考git-docs。 Table of Contents git Table of Contents add archive blame branch checkout cherry-pick clone commit config diff fetch for-each-ref github init log &amp; show merge mv pull pus">
+<meta property="og:description" content="git各个命令的详细使用方法参考git-docs。">
 <meta property="og:locale" content="en_US">
-<meta property="article:published_time" content="2024-04-28T10:29:35.289Z">
-<meta property="article:modified_time" content="2024-04-28T10:29:35.289Z">
+<meta property="article:published_time" content="2024-04-28T10:31:43.065Z">
+<meta property="article:modified_time" content="2024-04-28T10:31:43.065Z">
 <meta property="article:author" content="John Doe">
 <meta name="twitter:card" content="summary">
   
@@ -74,7 +74,7 @@
         <section id="main"><article id="post-git" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
   <div class="article-meta">
     <a href="/2024/04/28/git/" class="article-date">
-  <time class="dt-published" datetime="2024-04-28T10:29:35.289Z" itemprop="datePublished">2024-04-28</time>
+  <time class="dt-published" datetime="2024-04-28T10:31:43.065Z" itemprop="datePublished">2024-04-28</time>
 </a>
     
   </div>
@@ -83,8 +83,7 @@
     
     <div class="e-content article-entry" itemprop="articleBody">
       
-        <h1 id="git"><a href="#git" class="headerlink" title="git"></a>git</h1><p><strong>各个命令的详细使用方法参考<a target="_blank" rel="noopener" href="https://git-scm.com/docs">git-docs</a>。</strong></p>
-<h1 id="Table-of-Contents"><a href="#Table-of-Contents" class="headerlink" title="Table of Contents"></a>Table of Contents</h1><ul>
+        <h1 id="git"><a href="#git" class="headerlink" title="git"></a>git</h1><h1 id="各个命令的详细使用方法参考git-docs。Table-of-Contents"><a href="#各个命令的详细使用方法参考git-docs。Table-of-Contents" class="headerlink" title="各个命令的详细使用方法参考git-docs。Table of Contents"></a><strong>各个命令的详细使用方法参考<a target="_blank" rel="noopener" href="https://git-scm.com/docs">git-docs</a>。</strong><br><span id="more"></span><br>Table of Contents</h1><ul>
 <li><a href="#git">git</a></li>
 <li><a href="#table-of-contents">Table of Contents</a><ul>
 <li><a href="#add">add</a></li>
@@ -214,7 +213,7 @@
 </blockquote>
 <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">[remote &quot;gitlab&quot;]</span><br><span class="line">    url = git@1.2.1.1:l/a.git</span><br><span class="line">    fetch = +refs/heads/*:refs/remotes/gitlab/*</span><br><span class="line">    pushurl = git@1.2.1.1:l/a.git</span><br><span class="line">    pushurl = git@1.2.1.1:l/b.git</span><br></pre></td></tr></table></figure>
 
-<p>上面设置两个pushurl，用于同时推送到两个gitlab上，也可以通过如下两个命令达到同样的效果：<br>git remote set-url –add –push origin <a href="mailto:&#103;&#105;&#116;&#x40;&#49;&#46;&#50;&#46;&#x31;&#x2e;&#49;">&#103;&#105;&#116;&#x40;&#49;&#46;&#50;&#46;&#x31;&#x2e;&#49;</a>:l&#x2F;a.git<br>git remote set-url –add –push origin <a href="mailto:&#x67;&#x69;&#116;&#x40;&#x31;&#46;&#x32;&#46;&#x31;&#46;&#x31;">&#x67;&#x69;&#116;&#x40;&#x31;&#46;&#x32;&#46;&#x31;&#46;&#x31;</a>:l&#x2F;b.git </p>
+<p>上面设置两个pushurl，用于同时推送到两个gitlab上，也可以通过如下两个命令达到同样的效果：<br>git remote set-url –add –push origin <a href="mailto:&#x67;&#105;&#x74;&#x40;&#49;&#x2e;&#50;&#x2e;&#49;&#x2e;&#49;">&#x67;&#105;&#x74;&#x40;&#49;&#x2e;&#50;&#x2e;&#49;&#x2e;&#49;</a>:l&#x2F;a.git<br>git remote set-url –add –push origin <a href="mailto:&#x67;&#x69;&#116;&#64;&#49;&#x2e;&#50;&#x2e;&#49;&#46;&#x31;">&#x67;&#x69;&#116;&#64;&#49;&#x2e;&#50;&#x2e;&#49;&#46;&#x31;</a>:l&#x2F;b.git </p>
 <blockquote>
 <p>global</p>
 </blockquote>
@@ -222,7 +221,7 @@
 <li>git config –global color.ui true # 使语法着色，让命令更加突出</li>
 <li>git config –list # 查看config信息</li>
 <li>git config –global user.name “shenguotao”</li>
-<li>git config –global user.email “<a href="mailto:&#115;&#103;&#116;&#x5f;&#97;&#x68;&#64;&#49;&#x36;&#x33;&#46;&#99;&#111;&#109;">&#115;&#103;&#116;&#x5f;&#97;&#x68;&#64;&#49;&#x36;&#x33;&#46;&#99;&#111;&#109;</a>“</li>
+<li>git config –global user.email “<a href="mailto:&#x73;&#103;&#x74;&#95;&#x61;&#x68;&#64;&#x31;&#54;&#51;&#x2e;&#99;&#111;&#x6d;">&#x73;&#103;&#x74;&#95;&#x61;&#x68;&#64;&#x31;&#54;&#51;&#x2e;&#99;&#111;&#x6d;</a>“</li>
 <li>git config –global alias.logg “log –graph –decorate –abbrev-commit –all” # 美化log</li>
 <li>git config –global push.default simple     # 设置上传代码的分支</li>
 <li>git config –unset –global user.name # 清除配置信息</li>

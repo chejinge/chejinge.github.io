@@ -14,7 +14,7 @@
 <meta property="og:description" content="##Codis Redis 集群方案 Codis 是一个分布式 Redis 解决方案，与官方的去中心的集群模式不同，Codis 采用的是 Proxy-based 的方案。Codis 由 codis-admin、codis-fe、codis-dashboard、codis-proxy、codis-server等四个组件构成。 codis-admin 是集群管理的命令行工具，用于控制 codis-pr">
 <meta property="og:locale" content="en_US">
 <meta property="article:published_time" content="2024-04-28T03:54:23.000Z">
-<meta property="article:modified_time" content="2024-04-28T03:57:37.104Z">
+<meta property="article:modified_time" content="2024-04-28T10:31:56.918Z">
 <meta property="article:author" content="John Doe">
 <meta name="twitter:card" content="summary">
   
@@ -96,6 +96,7 @@
         <p>##Codis Redis 集群方案</p>
 <p>Codis 是一个分布式 Redis 解决方案，与官方的去中心的集群模式不同，Codis 采用的是 Proxy-based 的方案。Codis 由 codis-admin、codis-fe、codis-dashboard、codis-proxy、codis-server等四个组件构成。</p>
 <p>codis-admin 是集群管理的命令行工具，用于控制 codis-proxy、codis-dashboard 状态以及访问外部存储。</p>
+<span id="more"></span>
 <p>codis-fs 是集群管理界面，多个集群实例可以共享同一个前端展示页面。</p>
 <p>codis-dashboard 是集群管理工具，支持 codis-proxy、codis-server 的添加、删除，以及据迁移等操作，在集群状态发生改变时，codis-dashboard 维护集群下所有 codis-proxy 的状态的一致性。</p>
 <p>codis-proxy 客户端连接的Redis代理服务，本身实现了Redis协议，是一个无状态的服务。</p>
