@@ -92,29 +92,11 @@
     <div class="e-content article-entry" itemprop="articleBody">
       
         <p>pika 在启动时，会通过PikaServer Start()函数启动pika 处理网络请求和执行redis命令等线程。本文重点介绍，pika是如何处理Redis client网络请求，以及如何执行Redis命令的代码流程。</p>
-<p>与Redis的单线程模型不同，pika采用多线程模型处理客户端网络请求和执行Redis命令。pika 将处理网络请求和执行命令进行了分离，分别交由不同的线程进行处理。pika还包含很多其他线程，详情见pika线程模型。</p>
-<p>在PikaServer Start()函数中启动了多个服务线程，其中与处理网络请求和执行Redis命令相关的主要有两个PikaClientProcessor和PikaDispatchThread（如下图所示），PikaDispatchThread 负责监听客户端请求端口，接收客户端的连接请求，解析Redis命令，然后将命令封装成任务，扔给PikaClientProcessor执行Redis命令。PikaClientProcessor负责执行由Redis命令封装的Task（任务）。<br><img src="/../images/command/pikaserver.png" alt="pikaserver"></p>
-<h2 id="处理网络请求"><a href="#处理网络请求" class="headerlink" title="处理网络请求"></a>处理网络请求</h2><p>PikaDispatchThread负责处理客户端网络请求，在PikaDispatchThread的StartThread函数中只有一个操作，就是调用DispatchThread的StartThread函数 ，DispatchThread的StartThread函数会启动worker_num_个数的WorkerThread线程，同时，还会启动 TimerTaskThread 线程，以及通过 ServerThread的StartThread函数启动DispatchThread线程。</p>
-<p><img src="/../images/command/Dispatchthread.png" alt="Dispatchthread"><br>DispatchThrea继承自ServerThread，ServerThread继承了Thread，线程启动时实际上运行的是子类的ThreadMain方法，继承了Thread类的子类需要有自己的ThreadMain。ServerThread的StartThread函数启动DispatchThread线程，会先执行ServerThread::InitHandle()，绑定和监听端口，然后启动线程。</p>
-<p><img src="/../images/command/serverthread.png" alt="serverthread"><br>DispatchThread线程启动后，会执行ServerThread的ThreadMain函数。当接收到用户请求后，在ThreadMain函数中调用DispatchThread的HandleNewConn函数封装网络请求NetItem，并将网络请求NetItem放置到WorkerThread线程的队列中。</p>
-<p><img src="/../images/command/dispather.png" alt="dispather"><br>接下来，由WorkerThread线程负责从网络请求中读取请求参数。WorkerThread继承了Thread，并且实现了ThreadMain方法。WorkerThread线程启动后，执行 WorkerThread 的 ThreadMain 函数（精简代码如下图所示）。</p>
-<p><img src="/../images/command/workthread-threadmain.png" alt="workthread-threadmain"><br>在ThreadMain 函数中，首先会通过上图的93行 conn_factory_-&gt;NewNetConn创建一个PikaClientConn对象，将该对象放置到 conns_ map中，并将状态为kReadable的fd放回到NetMultiplexer队列中。上面提到的conn_factory_是由PikaDispatchThread类中内部类 ClientConnFactory 实现，该类继承了 ConnFactory ，并实现了 NewNetConn函数，如下图所示。<br><img src="/../images/command/clientconn.png" alt="clientconn"></p>
-<p>为什么网络请求第一次会先进入到93行的代码逻辑，需要了解NetMultiplexer的epoll模型，然后，通过ThreadMain中net_multiplexer_-&gt;NetPoll重新取回该连接，因为在上一步pfe-&gt;mask的状态被设置为kReadable，因此，接下来会进入到图中的128行，然后通过 in_conn-&gt;GetRequest()解析客户端请求的参数。在前面介绍中讲到conn是一个PikaClientConn对象，PikaClientConn继承了RedisConn，因此in_conn-&gt;GetRequest() 的具体实现是在 RedisConn 的 GetRequest()函数。在GetRequest()函数中，将请求参数封装成任务，交给ThreadPool线程进行处理。</p>
-<h2 id="执行Redis命令"><a href="#执行Redis命令" class="headerlink" title="执行Redis命令"></a>执行Redis命令</h2><p>PikaClientProcessor中的ThreadPool负责执行客户端发送过来的Redis命令。这里启动的worker_num_ 个 BGThread 线程，应该是没有使用，属于无效代码？？？，BGThread线程主要承担一些比较重的命令执行，比如bgsave, purgelogs, keyscan等，但是使用的不是这里启动的线程。<br><img src="/../images/command/pikaclient.png" alt="pikaclient"></p>
-<p>ThreadPool在start_thread_pool函数中启动了worker_num_个数的Worker线程，最终客户端发送过来的Redis命令由Worker线程负责处理。Worker线程启动后，会执行Worker中的runInThread函数。在runInThread函数中会不停的从 timer_queue_ 和 queue_ 两个队列中取任务，并执行任务。<br><img src="/../images/command/Threadpool-runinthread.png" alt="Threadpool-runinthread"></p>
-<p>在PikaClientProcessor初始化时，会初始化worker_num个数的BGThread线程，然后在 Start()函数中将所有 BGThread线程启动。BGThread线程启动后，会执行BGThread中的ThreadMain函数。在ThreadMain函数中会不停的从 timer_queue_ 和 queue_ 两个队列中取任务，并执行任务（下图中99行）。备注：这里的timer_queue_没有被使用，应该属于无效代码。<br><img src="/../images/command/bgthread-main.png" alt="bgthread-main"></p>
-<h2 id="是如何将Redis命令封装的任务交给ThreadPool进行执行的？"><a href="#是如何将Redis命令封装的任务交给ThreadPool进行执行的？" class="headerlink" title="是如何将Redis命令封装的任务交给ThreadPool进行执行的？"></a>是如何将Redis命令封装的任务交给ThreadPool进行执行的？</h2><p>在RedisConn::GetRequest里面，使用RedisParser::ProcessRequestBuffer来解析读取到的内容，然后有2种处理方式，DealMessage和Complete，DealMessage对应着ParserDealMessageCb，Complete对应着ParserCompleteCb<br><img src="/../images/command/clientconn.png" alt="clientconn"></p>
-<p>这两个方法，ParserDealMessageCb是同步处理，ParserCompleteCb是异步处理。同步就是一个一个命令调用PikaClientConn::DealMessage来处理，异步的话是解析完合成一组命令统一调PikaClientConn::ProcessRedisCmds处理。</p>
-<p>PikaClientConn::DealMessage 函数是一个空实现，直接return 0，因此，RedisParser::ProcessRequestBuffer 只会采用ParserCompleteCb异步的方式批量执行Redis命令。</p>
-<p>在PikaClientConn的ProcessRedisCmds函数中，会将Redis命令封装成任务，然后通过 g_pika_server-&gt;ScheduleClientPool 函数将任务扔到ThreadPool的任务队列中。</p>
-<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>Pika 从接收网络请求到执行Redis命令的代码流程如下图所示<br><img src="/../images/command/%E6%80%BB%E4%BD%93%E5%A4%84%E7%90%86%E6%B5%81%E7%A8%8B.png" alt="总体处理流程"></p>
-<p>PikaDispatchThread：负责创建和启动 DispatchThread 线程。</p>
-<p>DispatchThread: DispatchThread 线程启动时，会先启动 worker_num 个 WorkerThread线程，然后自身线程监听服务端口，接收客户端的连接请求（conn fd），交给WorkerThread线程去处理。</p>
-<p>WorkerThread:  该线程会创建客户端连接请求对象（PikaClientConn），解析Redis命令，然后将命令封装成一个 Task 扔到 ThreadPool 执行，任务执行完毕之后由该线程将 Reply 返回给用户。</p>
-<p>PikaClientProcessor：负责创建ThreadPool对象，以及启动worker_num个BGThread线程。</p>
-<p>ThreadPool: 负责创建和启动 worker_num 个 Worker线程。</p>
-<p>Worker：该线程负责执行Redis命令和写binlog，并将执行结果仍回到WorkerThread线程队列。</p>
-
+        
+          <p class="article-more-link">
+            <a href="/2024/04/28/pika%E6%89%A7%E8%A1%8C%E5%91%BD%E4%BB%A4%E6%B5%81%E7%A8%8B%E8%A7%A3%E6%9E%90/#more">Read More</a>
+          </p>
+        
       
     </div>
     <footer class="article-footer">

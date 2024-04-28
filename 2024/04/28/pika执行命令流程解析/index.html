@@ -6,12 +6,12 @@
   
   <title>pika执行命令流程解析 | Hexo</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-  <meta name="description" content="pika 在启动时，会通过PikaServer Start()函数启动pika 处理网络请求和执行redis命令等线程。本文重点介绍，pika是如何处理Redis client网络请求，以及如何执行Redis命令的代码流程。 与Redis的单线程模型不同，pika采用多线程模型处理客户端网络请求和执行Redis命令。pika 将处理网络请求和执行命令进行了分离，分别交由不同的线程进行处理。pika">
+  <meta name="description" content="pika 在启动时，会通过PikaServer Start()函数启动pika 处理网络请求和执行redis命令等线程。本文重点介绍，pika是如何处理Redis client网络请求，以及如何执行Redis命令的代码流程。">
 <meta property="og:type" content="article">
 <meta property="og:title" content="pika执行命令流程解析">
 <meta property="og:url" content="http://example.com/2024/04/28/pika%E6%89%A7%E8%A1%8C%E5%91%BD%E4%BB%A4%E6%B5%81%E7%A8%8B%E8%A7%A3%E6%9E%90/index.html">
 <meta property="og:site_name" content="Hexo">
-<meta property="og:description" content="pika 在启动时，会通过PikaServer Start()函数启动pika 处理网络请求和执行redis命令等线程。本文重点介绍，pika是如何处理Redis client网络请求，以及如何执行Redis命令的代码流程。 与Redis的单线程模型不同，pika采用多线程模型处理客户端网络请求和执行Redis命令。pika 将处理网络请求和执行命令进行了分离，分别交由不同的线程进行处理。pika">
+<meta property="og:description" content="pika 在启动时，会通过PikaServer Start()函数启动pika 处理网络请求和执行redis命令等线程。本文重点介绍，pika是如何处理Redis client网络请求，以及如何执行Redis命令的代码流程。">
 <meta property="og:locale" content="en_US">
 <meta property="og:image" content="http://example.com/images/command/pikaserver.png">
 <meta property="og:image" content="http://example.com/images/command/Dispatchthread.png">
@@ -25,7 +25,7 @@
 <meta property="og:image" content="http://example.com/images/command/clientconn.png">
 <meta property="og:image" content="http://example.com/images/command/%E6%80%BB%E4%BD%93%E5%A4%84%E7%90%86%E6%B5%81%E7%A8%8B.png">
 <meta property="article:published_time" content="2024-04-28T11:45:50.000Z">
-<meta property="article:modified_time" content="2024-04-28T12:11:37.031Z">
+<meta property="article:modified_time" content="2024-04-28T12:15:39.223Z">
 <meta property="article:author" content="John Doe">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:image" content="http://example.com/images/command/pikaserver.png">
@@ -106,6 +106,7 @@
     <div class="e-content article-entry" itemprop="articleBody">
       
         <p>pika 在启动时，会通过PikaServer Start()函数启动pika 处理网络请求和执行redis命令等线程。本文重点介绍，pika是如何处理Redis client网络请求，以及如何执行Redis命令的代码流程。</p>
+<span id="more"></span>
 <p>与Redis的单线程模型不同，pika采用多线程模型处理客户端网络请求和执行Redis命令。pika 将处理网络请求和执行命令进行了分离，分别交由不同的线程进行处理。pika还包含很多其他线程，详情见pika线程模型。</p>
 <p>在PikaServer Start()函数中启动了多个服务线程，其中与处理网络请求和执行Redis命令相关的主要有两个PikaClientProcessor和PikaDispatchThread（如下图所示），PikaDispatchThread 负责监听客户端请求端口，接收客户端的连接请求，解析Redis命令，然后将命令封装成任务，扔给PikaClientProcessor执行Redis命令。PikaClientProcessor负责执行由Redis命令封装的Task（任务）。<br><img src="/../images/command/pikaserver.png" alt="pikaserver"></p>
 <h2 id="处理网络请求"><a href="#处理网络请求" class="headerlink" title="处理网络请求"></a>处理网络请求</h2><p>PikaDispatchThread负责处理客户端网络请求，在PikaDispatchThread的StartThread函数中只有一个操作，就是调用DispatchThread的StartThread函数 ，DispatchThread的StartThread函数会启动worker_num_个数的WorkerThread线程，同时，还会启动 TimerTaskThread 线程，以及通过 ServerThread的StartThread函数启动DispatchThread线程。</p>
