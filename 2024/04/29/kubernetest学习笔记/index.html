@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  
+  <title>kubernetest学习笔记 | Hexo</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <meta name="description" content="介绍Kubernetes 是一个编排容器的工具，其实也是管理应用的全生命周期的一个工具，从创建应用，应用的部署，应用提供服务，扩容缩容应用，应用更新，都非常的方便，而且可以做到故障自愈，例如一个服务器挂了，可以自动将这个服务器上的服务调度到另外一个主机上进行运行，无需进行人工干涉。 作用自动化容器的部署和复制 随时扩展或收缩容器规模 将容器组织成组，并且提供容器间的负载均衡 很容易地升级应用程序容">
+<meta property="og:type" content="article">
+<meta property="og:title" content="kubernetest学习笔记">
+<meta property="og:url" content="http://example.com/2024/04/29/kubernetest%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/index.html">
+<meta property="og:site_name" content="Hexo">
+<meta property="og:description" content="介绍Kubernetes 是一个编排容器的工具，其实也是管理应用的全生命周期的一个工具，从创建应用，应用的部署，应用提供服务，扩容缩容应用，应用更新，都非常的方便，而且可以做到故障自愈，例如一个服务器挂了，可以自动将这个服务器上的服务调度到另外一个主机上进行运行，无需进行人工干涉。 作用自动化容器的部署和复制 随时扩展或收缩容器规模 将容器组织成组，并且提供容器间的负载均衡 很容易地升级应用程序容">
+<meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="2024-04-29T07:47:09.000Z">
+<meta property="article:modified_time" content="2024-04-29T08:32:36.417Z">
+<meta property="article:author" content="John Doe">
+<meta name="twitter:card" content="summary">
+  
+    <link rel="alternate" href="/atom.xml" title="Hexo" type="application/atom+xml">
+  
+  
+    <link rel="shortcut icon" href="/favicon.png">
+  
+  
+  
+<link rel="stylesheet" href="/css/style.css">
+
+  
+    
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.min.css">
+
+  
+  
+<meta name="generator" content="Hexo 7.0.0"></head>
+
+<body>
+  <div id="container">
+    <div id="wrap">
+      <header id="header">
+  <div id="banner"></div>
+  <div id="header-outer" class="outer">
+    <div id="header-title" class="inner">
+      <h1 id="logo-wrap">
+        <a href="/" id="logo">Hexo</a>
+      </h1>
+      
+    </div>
+    <div id="header-inner" class="inner">
+      <nav id="main-nav">
+        <a id="main-nav-toggle" class="nav-icon"><span class="fa fa-bars"></span></a>
+        
+          <a class="main-nav-link" href="/">Home</a>
+        
+          <a class="main-nav-link" href="/archives">Archives</a>
+        
+      </nav>
+      <nav id="sub-nav">
+        
+        
+          <a class="nav-icon" href="/atom.xml" title="RSS Feed"><span class="fa fa-rss"></span></a>
+        
+        <a class="nav-icon nav-search-btn" title="Search"><span class="fa fa-search"></span></a>
+      </nav>
+      <div id="search-form-wrap">
+        <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" class="search-form-input" placeholder="Search"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="http://example.com"></form>
+      </div>
+    </div>
+  </div>
+</header>
+
+      <div class="outer">
+        <section id="main"><article id="post-kubernetest学习笔记" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+  <div class="article-meta">
+    <a href="/2024/04/29/kubernetest%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/" class="article-date">
+  <time class="dt-published" datetime="2024-04-29T07:47:09.000Z" itemprop="datePublished">2024-04-29</time>
+</a>
+    
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="p-name article-title" itemprop="headline name">
+      kubernetest学习笔记
+    </h1>
+  
+
+      </header>
+    
+    <div class="e-content article-entry" itemprop="articleBody">
+      
+        <h2 id="介绍"><a href="#介绍" class="headerlink" title="介绍"></a>介绍</h2><p>Kubernetes 是一个编排容器的工具，其实也是管理应用的全生命周期的一个工具，从创建应用，应用的部署，应用提供服务，扩容缩容应用，应用更新，都非常的方便，而且可以做到故障自愈，例如一个服务器挂了，可以自动将这个服务器上的服务调度到另外一个主机上进行运行，无需进行人工干涉。</p>
+<h2 id="作用"><a href="#作用" class="headerlink" title="作用"></a>作用</h2><p><strong>自动化容器的部署和复制</strong></p>
+<p><strong>随时扩展或收缩容器规模</strong></p>
+<p><strong>将容器组织成组，并且提供容器间的负载均衡</strong></p>
+<p><strong>很容易地升级应用程序容器的新版本</strong></p>
+<p><strong>提供容器弹性，如果容器失效就替换它</strong></p>
+<h2 id="组件"><a href="#组件" class="headerlink" title="组件"></a>组件</h2><ul>
+<li><p>KubeBlocks: 是一个开源的云原生数据基础设施，旨在帮助应用程序开发人员和平台工程师管理Kubernetes 上的数据库和分析工作负载</p>
+</li>
+<li><p>Kbcli 是 KubeBlocks 的命令行工具，用于与 KubeBlocks 进行交互</p>
+</li>
+<li><p>Kubernetes：Kubernetes（k8s）是一个开源的容器编排平台，用于自动化、管理和扩展容器化应用程序</p>
+</li>
+<li><p>kube-apiserver（API Server）： 提供 Kubernetes API 的入口，作为控制平面的前端，接收和处理来自客户端、控制器和其他组件的请求。</p>
+</li>
+<li><p>kube-controller-manager（Controller Manager）： 运行一组控制器，用于监控系统状态并对所需的更改进行响应，例如自动扩展、修复和副本控制。</p>
+</li>
+<li><p>kube-scheduler（Scheduler）： 负责根据容器资源需求和节点资源可用性，将容器分配到合适的节点上运行。</p>
+</li>
+<li><p>kubelet： 运行在每个节点上，负责维护容器的运行状态，与 Master 节点协作以确保容器按预期运行。</p>
+</li>
+<li><p>kube-proxy： 在每个节点上维护网络代理，实现 Kubernetes 服务发现和负载均衡功能。</p>
+</li>
+<li><p>etcd： 是一个分布式键值存储系统，用于存储 Kubernetes 集群的配置和状态信息。</p>
+</li>
+<li><p>container runtime： 在每个节点上运行，负责创建和管理容器，常用的包括 Docker、containerd等。</p>
+</li>
+<li><p>kube-dashboard： 提供 Web 界面，用于可视化和管理 Kubernetes 集群。</p>
+</li>
+<li><p>Addon 组件： 这些组件提供附加功能，如 DNS（用于服务发现和解析）、Ingress Controller（用于管理入口流量）等。</p>
+</li>
+<li><p>Kubectl： 是 Kubernetes 的命令行工具，用于与 Kubernetes API 进行交互，管理和操作集群资源。</p>
+</li>
+<li><p>kubeadm：是 Kubernetes 提供的一个命令行工具，用于简化在多个节点上初始化、部署和管理 Kubernetes 集群</p>
+</li>
+<li><p>Pod：Kubernetes 集群中资源的最小单位 ****，一个 Pod 里面包含多个 Container</p>
+</li>
+<li><p>Nodes：构成了 Kubernetes 集群的集体计算能力，实际部署容器运行的地方</p>
+</li>
+<li><p>RunC：runc 是一个用于创建和管理标准化容器的工具，有助于实现容器的轻量级、高效隔离和管理。</p>
+</li>
+<li><p>Container：运行起来的进程</p>
+</li>
+<li><p>image：理解为可执行程序</p>
+</li>
+<li><p>dockerfile: dockerfile 就是 image 的源代码</p>
+</li>
+</ul>
+<h2 id="Kubectl-命令"><a href="#Kubectl-命令" class="headerlink" title="Kubectl 命令"></a>Kubectl 命令</h2><ul>
+<li><p>journalctl -xeu kubelet # 用于查看系统日志中与 kubelet 服务相关的错误和警告消息</p>
+</li>
+<li><p>kubectl logs xxx（pod-name）# 查看某个 pod 的日志</p>
+</li>
+<li><p>kubectl logs -n # 查看某个命名空间下的 pod 的日志</p>
+</li>
+<li><p>kubectl logs jobs&#x2F;install-snapshot-controller-addon -n</p>
+</li>
+<li><p>kubectl logs deployments&#x2F;kubeblocks -n</p>
+</li>
+<li><p>kubectl describe pods #显示由 RC 管理的 Pod 的信息</p>
+</li>
+<li><p>kubectl describe node <node_name> #查看某个 node 的详细信息</p>
+</li>
+<li><p>kubectl get pods # 列出当前 Kubernetes 集群中所有 Pods 的命令</p>
+</li>
+<li><p>kubectl get pods -n # 查看指定命名空间下的 pod</p>
+</li>
+<li><p>kubectl get pods xxx # 获取一个 pod</p>
+</li>
+<li><p>kubectl get pods –all-namespaces -o wide # 查看所有的 pod</p>
+</li>
+<li><p>kubectl cluster-info # 用于查看与当前配置的 Kubernetes 集群相关信息的命令</p>
+</li>
+<li><p>kubectl get jobs -A # 用于列出 Kubernetes 集群中所有命名空间中的 Job 资源的命令</p>
+</li>
+<li><p>kubectl exec -it -n – &#x2F;bin&#x2F;bash # 进入指定 Pod 内部的容器，并在容器内部执行命令</p>
+</li>
+<li><p>kubectl get node -o wide # 用于获取 Kubernetes 集群中所有节点（Node）信息的命令</p>
+</li>
+<li><p>kubectl get storageclass # 用于获取 Kubernetes 集群中存储类</p>
+</li>
+<li><p>kubectl get pv # 用于获取 Kubernetes 集群中永久卷</p>
+</li>
+<li><p>kubectl get pvc # 用于获取 Kubernetes 集群中永久卷声明</p>
+</li>
+<li><p>kubectl patch storageclass -p ‘{“metadata”: {“annotations”:{“storageclass.kubernetes.io&#x2F;is-default-class”:”true”}}}’ # 用于将一个存储类（StorageClass）设置为默认的存储类</p>
+</li>
+<li><p>kubectl get storageclass ssd-storage -o yaml &gt; ssd-storage.yaml # 将名为 “ssd-storage” 的存储类（StorageClass）的配置导出为一个 YAML 文件</p>
+</li>
+<li><p>kubectl apply -f ssd-storage.yaml # 用于将一个 YAML 文件中定义的 Kubernetes 资源（如存储类、部署、服务等）应用到你的 Kubernetes 集群</p>
+</li>
+<li><p>kubectl get events -n # 用于获取指定命名空间中的事件的 Kubernetes 命令</p>
+</li>
+<li><p>kubectl delete -f pod.yaml #根据 pod.yaml 定义的名称删除 Pod</p>
+</li>
+<li><p>kubectl delete pods,services -l name&#x3D; #删除所有包含某个 Label 的 Pod 和 Service</p>
+</li>
+<li><p>kubectl delete pods –all</p>
+</li>
+<li><p>kubectl delete pod -n –force # 删除一个 pod</p>
+</li>
+<li><p>kubectl delete ns –force # 删除一个 namespace</p>
+</li>
+<li><p>kubectl get events -n –field-selector involvedObject.name&#x3D;</p>
+</li>
+<li><p>kubeadm token create –print-join-command # 获取主节点初始化的 token</p>
+</li>
+<li><p>export PATH&#x3D;$PATH:&#x2F;usr&#x2F;local&#x2F;bin # 使 kbcli 可用</p>
+</li>
+<li><p>kubectl create -f my-service.yaml -f my-rc.yaml #根据 YAML 配置文件一次性创建 Service 和 RC</p>
+</li>
+<li><p>kubectl apply -f app.yaml #如果存在则更新，不存在则创建</p>
+</li>
+<li><p>kubectl get pod -o yaml #以 YAML 格式显示 Pod 的详细信息</p>
+</li>
+<li><p>kubectl get pod -o wide #显示Pod的更多信息</p>
+</li>
+<li><p>kubectl get rc,service #查看 RC 和 Service 列表</p>
+</li>
+<li><p>kubectl get endpoints #查看 Endpoint 列表</p>
+</li>
+<li><p>kubectl get pod -n kube-system -w #动态查看 pod</p>
+</li>
+<li><p>kubectl get cs #查看 Master 组件状态</p>
+</li>
+<li><p>kubectl api-resources #列出 K8s 所有资源</p>
+</li>
+<li><p>kubectl get all -n default #查看 default 命名空间下面的所有资源</p>
+</li>
+<li><p>kubectl cluster-info #查看集群接口信息</p>
+</li>
+<li><p>kubectl get apiservice #查看 apiserver 聚合层注册信息</p>
+</li>
+<li><p>kubectl api-versions #查看 API 的版本</p>
+</li>
+<li><p>kubectl logs -f &lt;Pod名称&gt; -c &lt;容器名称&gt; #如果 Pod 中有多个容器，需用 -c 指定</p>
+</li>
+<li><p>kubectl exec date # 执行 Pod 的 date 命令，默认使用 Pod 中的第一个容器执行</p>
+</li>
+<li><p>kubectl exec -c date #指定 Pod 中的某个容器执行 date 命令</p>
+</li>
+<li><p>kubectl exec -it -c &#x2F;bin&#x2F;bash #通过 bash 获得 Pod 中某个容器的 TTY，相当于登陆容器</p>
+</li>
+<li><p>kubectl logs</p>
+</li>
+<li><p>kubectl logs -f -c #跟踪查看容器的日志，相当于 tail -f 命令的结果</p>
+</li>
+<li><p>kubectl version # 查看 k8s 版本</p>
+</li>
+<li><p>kubectl delete pod Podname –force –grace-period&#x3D;0 # 强制删除 Pod</p>
+</li>
+</ul>
+<p><strong>kubectl expose deployment web –port&#x3D;80 –type&#x3D;NodePort # 生成一个外部访问的端口</strong></p>
+<ul>
+<li><p>kubectl port-forward –address 0.0.0.0 8888:80 # 将 Pod 的开放端口映射到本地</p>
+</li>
+<li><p>kubectl cp :&#x2F;etc&#x2F;hosts &#x2F;tmp</p>
+</li>
+<li><p>kubectl cp :&#x2F;tmp&#x2F;java.out &#x2F;root&#x2F;java.out -c 容器名 -n #必须指定拷贝到本地的文件名,如&#x2F;root&#x2F;java.out</p>
+</li>
+<li><p>kubectl cp &#x2F;tmp&#x2F;dir :&#x2F;tmp&#x2F; -c 容器名 -n #拷贝目录为增量覆盖，同名的文件覆盖</p>
+</li>
+<li><p>kubectl scale rc myweb –replicas&#x3D;3 # 动态缩放</p>
+</li>
+</ul>
+<p>#至少有 3 个 Pod，当该 Deployment 下的所有 Pod 的 CPU 使用率之和达到 80% 时会扩容 Pod 到4~10 个之间</p>
+<p><strong>kubectl autoscale deployment web –min&#x3D;3 –max&#x3D;10 –cpu-percent&#x3D;80 #上述命令会创建一个HPA</strong></p>
+<ul>
+<li><p>kubectl get hpa</p>
+</li>
+<li><p>kubectl create ns cka # 创建一个名字为 cka 的命名空间</p>
+</li>
+<li><p>kubectl label namespaces default testing&#x3D;true # 给命名空间加标签</p>
+</li>
+<li><p>kubectl label namespaces default testing- # 删除标签</p>
+</li>
+<li><p>kubectl cordon 节点名 # 给节点加污点，不往上调度 Pod</p>
+</li>
+<li><p>kubectl label node 节点名 nodeType&#x3D;dev #给节点加标签</p>
+</li>
+<li><p>kubectl label node 节点名 nodeType- #删除标签</p>
+</li>
+<li><p>kubectl get nodes k8s-master -o go-template&#x3D; #查看 node 污点</p>
+</li>
+<li><p>kubectl get pv –sort-by&#x3D;{.spec.capacity.storage} # PV 按容量进行排序</p>
+</li>
+<li><p>kubectl cordon 节点名 #设置不可调度</p>
+</li>
+<li><p>kubectl drain 节点名 –delete-local-data –ignore-daemonsets #驱逐 pod</p>
+</li>
+<li><p>kubectl describe nodes 节点名 #检查 pod 是否全部驱逐成功</p>
+</li>
+<li><p>kubectl delete nodes 节点名 #摘除集群</p>
+</li>
+<li><p>kubectl rollout history deployment web #查看 Deployment 部署过的版本</p>
+</li>
+<li><p>kubectl rollout undo deployment web #回滚到上一个版本</p>
+</li>
+<li><p>kubectl rollout undo deployment web –to-revision&#x3D;2 #回滚到指定版本</p>
+</li>
+</ul>
+<h2 id="Kbcli-命令"><a href="#Kbcli-命令" class="headerlink" title="Kbcli 命令"></a>Kbcli 命令</h2><ul>
+<li><p>curl -fsSL <a target="_blank" rel="noopener" href="https://kubeblocks.io/installer/install_cli.sh">https://kubeblocks.io/installer/install_cli.sh</a> | bash # 下载 kbcli</p>
+</li>
+<li><p>kbcli kubeblocks install –version 0.5.3 -v1 # 下载 kubeblocks</p>
+</li>
+<li><p>helm install pika .&#x2F;pika # 下载 pika-cluster</p>
+</li>
+<li><p>helm install pika-cluster .&#x2F;pika-cluster # 下载 pika-cluster</p>
+</li>
+<li><p>helm uninstall pika # 删除 pika</p>
+</li>
+<li><p>helm uninstall pika-cluster # 删除 pika-cluster</p>
+</li>
+<li><p>kbcli kubeblocks uninstall # 删除 kubeblocks 安装</p>
+</li>
+<li><p>kbcli kubeblocks uninstall –auto-approve # 删除 kubeblocks 安装依赖</p>
+</li>
+<li><p>kbcli kubeblocks status –all # 查看 kubeblocks 是否卸载干净</p>
+</li>
+<li><p>kbcli kb status # 查看 kb 状态</p>
+</li>
+<li><p>kbcli addon list # 查看所有 addon</p>
+</li>
+<li><p>kbcli cluster list # 查看所有 cluster</p>
+</li>
+<li><p>kbcli cv list</p>
+</li>
+<li><p>kbcli cd list</p>
+</li>
+<li><p>kbcli cluster decribe</p>
+</li>
+<li><p>kbcli addon enable</p>
+</li>
+<li><p>kbcli cluster hscale pika-cluster –replicas 4 –components pika # 增加两个 Pika 实例</p>
+</li>
+</ul>
+<h2 id="部署"><a href="#部署" class="headerlink" title="部署"></a>部署</h2><ul>
+<li><p>kubectl port-forward svc&#x2F;pika-cluster-codis-fe 8080 # 暴露 8080 端口</p>
+</li>
+<li><p>kubectl port-forward svc&#x2F;pika-cluster-codis-proxy 19000 # 暴露 19000 端口</p>
+</li>
+<li><p>kubectl edit svc pika-cluster-codis-fe # 配置 EXTERNAL-IP</p>
+</li>
+<li><p>externalIPs: - 10.224.133.40</p>
+</li>
+</ul>
+<h2 id="虚拟机命令"><a href="#虚拟机命令" class="headerlink" title="虚拟机命令"></a>虚拟机命令</h2><ul>
+<li><p>vagrant init # 初始化 Vagrant 环境</p>
+</li>
+<li><p>vagrant up # 启动虚拟机</p>
+</li>
+<li><p>vagrant ssh # 连接到虚拟机</p>
+</li>
+<li><p>vagrant halt # 停止虚拟机</p>
+</li>
+<li><p>vagrant suspend # 暂停虚拟机</p>
+</li>
+<li><p>vagrant resume # 恢复虚拟机</p>
+</li>
+<li><p>vagrant ssh node # 选择启动一个虚拟机</p>
+</li>
+</ul>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://example.com/2024/04/29/kubernetest%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/" data-id="clvkomnab000037tb2p39b5vf" data-title="kubernetest学习笔记" class="article-share-link"><span class="fa fa-share">Share</span></a>
+      
+      
+      
+    </footer>
+  </div>
+  
+    
+<nav id="article-nav">
+  
+  
+    <a href="/2024/04/28/pika%E6%89%A7%E8%A1%8C%E5%91%BD%E4%BB%A4%E6%B5%81%E7%A8%8B%E8%A7%A3%E6%9E%90/" id="article-nav-older" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Older</strong>
+      <div class="article-nav-title">pika执行命令流程解析</div>
+    </a>
+  
+</nav>
+
+  
+</article>
+
+
+</section>
+        
+          <aside id="sidebar">
+  
+    
+
+  
+    
+
+  
+    
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Archives</h3>
+    <div class="widget">
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2024/04/">April 2024</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2023/12/">December 2023</a></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Recent Posts</h3>
+    <div class="widget">
+      <ul>
+        
+          <li>
+            <a href="/2024/04/29/kubernetest%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/">kubernetest学习笔记</a>
+          </li>
+        
+          <li>
+            <a href="/2024/04/28/pika%E6%89%A7%E8%A1%8C%E5%91%BD%E4%BB%A4%E6%B5%81%E7%A8%8B%E8%A7%A3%E6%9E%90/">pika执行命令流程解析</a>
+          </li>
+        
+          <li>
+            <a href="/2024/04/28/git/">git教程</a>
+          </li>
+        
+          <li>
+            <a href="/2024/04/28/failover/">failover</a>
+          </li>
+        
+          <li>
+            <a href="/2024/04/19/Pika-3-5%E6%9C%80%E4%BD%B3%E5%AE%9E%E8%B7%B5/">Pika-3.5最佳实践</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+
+  
+</aside>
+        
+      </div>
+      <footer id="footer">
+  
+  <div class="outer">
+    <div id="footer-info" class="inner">
+      
+      &copy; 2024 John Doe<br>
+      Powered by <a href="https://hexo.io/" target="_blank">Hexo</a>
+    </div>
+  </div>
+</footer>
+
+    </div>
+    <nav id="mobile-nav">
+  
+    <a href="/" class="mobile-nav-link">Home</a>
+  
+    <a href="/archives" class="mobile-nav-link">Archives</a>
+  
+</nav>
+    
+
+
+<script src="/js/jquery-3.6.4.min.js"></script>
+
+
+
+  
+<script src="/fancybox/jquery.fancybox.min.js"></script>
+
+
+
+
+<script src="/js/script.js"></script>
+
+
+
+
+
+  </div>
+</body>
+</html>
