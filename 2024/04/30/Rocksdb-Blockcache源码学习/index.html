@@ -16,7 +16,7 @@
 <meta property="og:image" content="http://example.com/images/Blockcache/%E7%B1%BB%E5%9B%BE.png">
 <meta property="og:image" content="http://example.com/images/Blockcache/image.png">
 <meta property="article:published_time" content="2024-04-30T07:53:01.000Z">
-<meta property="article:modified_time" content="2024-04-30T08:32:14.276Z">
+<meta property="article:modified_time" content="2024-04-30T08:34:19.176Z">
 <meta property="article:author" content="John Doe">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:image" content="http://example.com/images/Blockcache/%E7%B1%BB%E5%9B%BE.png">
@@ -99,6 +99,8 @@
         <h2 id="Block-Cache"><a href="#Block-Cache" class="headerlink" title="Block Cache"></a>Block Cache</h2><p>Block Cache是RocksDB把数据缓存在内存中以提高读性能的一种方法。开发者可以创建一个cache对象并指明cache capacity，然后传入引擎中。cache对象可以在同一个进程中宫多个DB Instance使用，这样开发者就可以通过配置控制所有的cache使用。Block cache存储的是非压缩的数据块内容。用户也可以设置另外一个block cache来存储压缩数据块。读数据时首先从非压缩数据块cache中读数据、然后读压缩数据块cache。当Direct-IO打开的话，压缩数据库可以作为系统页缓存的替代。</p>
 <p>RocksDB使用Block cache作为读cache。用户可以指定Block cache使用LRUCache，并可以指定cache的大小。<br>Block cache分为两个，一个是用来缓存未被压缩的block数据，另一个用来缓存压缩的block数据。<br>处理读请求时，先查找未压缩的block cache，再查找压缩的block cache。压缩的block cache可以替换操作系统的page cache。</p>
 <p>RocksDB中有两种cache的实现方式，分别为LRUCache和CLockCache。这两种cache都会被分片，来降低锁压力。用户设置的容量平均分配给每个shard。默认情况下，每个cache都会被分片为64块，每块大小不小于512K字节。CLockCache不稳定，大家都会选择使用LRUCache,  需要定制化设置一个block cache时，可以调用NewLRUCache() or NewClockCache()来创建对象实例，并设置到block based table options。用户也可以使用自己的cache（需要实现cache 接口）。</p>
+<span id="more"></span>
+
 <p>用法如下</p>
 <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">std::shared_ptr&lt;Cache&gt; cache = NewLRUCache(capacity);</span><br><span class="line">BlockBasedTableOptions table_options;</span><br><span class="line">table_options.block_cache = cache;</span><br><span class="line">Options options;</span><br><span class="line">options.table_factory.reset(new BlockBasedTableFactory(table_options));</span><br></pre></td></tr></table></figure>
 
