@@ -14,7 +14,7 @@
 <meta property="og:description" content="Pika 是 360 热门的 c++开源项目，基于 rocksdb 开发的大容量类 Redis 存储，力求在完全兼容 Redis 协议、继承 Redis 便捷运维设计的前提下通过持久化存储方式解决 Redis 在大容量场景下主从同步代价高、恢复时间慢、单线程相对脆弱、内存成本高等问题。">
 <meta property="og:locale" content="en_US">
 <meta property="article:published_time" content="2024-04-19T11:39:40.000Z">
-<meta property="article:modified_time" content="2024-04-26T10:07:16.794Z">
+<meta property="article:modified_time" content="2024-04-30T08:14:07.505Z">
 <meta property="article:author" content="John Doe">
 <meta name="twitter:card" content="summary">
   
@@ -102,7 +102,8 @@
 <h2 id="Pika-最佳实践之三"><a href="#Pika-最佳实践之三" class="headerlink" title="Pika 最佳实践之三"></a>Pika 最佳实践之三</h2><p>Pika 的线程数量建议和 cpu 总线程数一致，如果是单机多实例的部署，每个 Pika 实例的线程数量可以酌情降低，但不建议低于 cpu 总线程数的 1&#x2F;2</p>
 <h2 id="Pika-最佳实践之四"><a href="#Pika-最佳实践之四" class="headerlink" title="Pika 最佳实践之四"></a>Pika 最佳实践之四</h2><p>Pika 的性能和 IO 性能息息相关，我们不建议在机械盘上部署耗时敏感项目的 Pika，另外为了避免一些稀奇古怪的问题，主从服务器的硬件性能应当尽量一致</p>
 <h2 id="Pika-最佳实践之五"><a href="#Pika-最佳实践之五" class="headerlink" title="Pika 最佳实践之五"></a>Pika 最佳实践之五</h2><p>在使用 Pika 多数据结构（hash，list，zset，zset）的时候，尽量确保每个 key 中的 field 不要太多，如果业务类型为耗时敏感型那么建议每个 key 的 field 数量不要超过 1 万个，特大 key 可以考虑拆分为多个小 key，这样可以避免超大 key 很多潜在的性能风险，而存储型业务（耗时不敏感）则没有这个要求</p>
-<h2 id="Pika-最佳实践之六"><a href="#Pika-最佳实践之六" class="headerlink" title="Pika 最佳实践之六"></a>Pika 最佳实践之六</h2><p>root-connection-num 参数非常有用，意为“允许通过 127.0.0.1 登录 Pika 的连接数”，它与最大连接数配置项 maxclients 独立，maxclients 的用尽并不会影响 root-connection-num，因此在发生异常 maxclients 被用尽的场景中，管理员仍然可以登录 Pika 所在服务器并通过 127.0.0.1 来登入 Pika 处理问题，避免了 maxclients 耗尽无法登录处理的尴尬局面<br>##Pika 最佳实践之七<br>client kill 命令被加强了，如果你想一次性杀掉当前 Pika 的所有连接，只需要执行 client kill all，不用担心，用于同步的连接不会受到影响</p>
+<h2 id="Pika-最佳实践之六"><a href="#Pika-最佳实践之六" class="headerlink" title="Pika 最佳实践之六"></a>Pika 最佳实践之六</h2><p>root-connection-num 参数非常有用，意为“允许通过 127.0.0.1 登录 Pika 的连接数”，它与最大连接数配置项 maxclients 独立，maxclients 的用尽并不会影响 root-connection-num，因此在发生异常 maxclients 被用尽的场景中，管理员仍然可以登录 Pika 所在服务器并通过 127.0.0.1 来登入 Pika 处理问题，避免了 maxclients 耗尽无法登录处理的尴尬局面</p>
+<h2 id="Pika-最佳实践之七"><a href="#Pika-最佳实践之七" class="headerlink" title="Pika 最佳实践之七"></a>Pika 最佳实践之七</h2><p>client kill 命令被加强了，如果你想一次性杀掉当前 Pika 的所有连接，只需要执行 client kill all，不用担心，用于同步的连接不会受到影响</p>
 <h2 id="Pika-最佳实践之八"><a href="#Pika-最佳实践之八" class="headerlink" title="Pika 最佳实践之八"></a>Pika 最佳实践之八</h2><p>适当地调整 timeout 参数，通过该参数 Pika 会主动断开不活动时间超过 timeout 值的连接，避免连接数耗尽问题的发生，由于连接也需要申请内存，因此合理的配置 timeout 参数也能够在一定程度上降低 Pika 的内存占用</p>
 <h2 id="Pika-最佳实践之九"><a href="#Pika-最佳实践之九" class="headerlink" title="Pika 最佳实践之九"></a>Pika 最佳实践之九</h2><p>Pika 的内存占用主要集中在 sst 文件的 cache 和连接申请内存，而通常连接申请内存会比 sst 的 cache 要大很多，Pika 目前已支持连接申请内存的动态调整、回收，因此连接占用的总内存大小是可以粗略估算的，如果你的 Pika 内存占用远超预估或大于 10g，那么可能为你当前使用的版本存在内存泄漏问题，尝试依次执行命令 client kill all 和 tcmalloc free 来对连接内存进行强制回收，如果效果不好请升级到最新版本</p>
 <h2 id="Pika-最佳实践之十"><a href="#Pika-最佳实践之十" class="headerlink" title="Pika 最佳实践之十"></a>Pika 最佳实践之十</h2><p>非常不建议单机运行 Pika，最简集群状态应为一主一从，而主从集群的容灾模式有很多种，可以考虑使用 lvs、vip 漂移、配置管理中间件等</p>
@@ -192,6 +193,10 @@
       <ul>
         
           <li>
+            <a href="/2024/04/30/Rocksdb-Blockcache%E6%BA%90%E7%A0%81%E5%AD%A6%E4%B9%A0/">Rocksdb Blockcache学习</a>
+          </li>
+        
+          <li>
             <a href="/2024/04/29/kubernetest%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/">kubernetest学习笔记</a>
           </li>
         
@@ -205,10 +210,6 @@
         
           <li>
             <a href="/2024/04/28/failover/">failover</a>
-          </li>
-        
-          <li>
-            <a href="/2024/04/19/Pika-3-5%E6%9C%80%E4%BD%B3%E5%AE%9E%E8%B7%B5/">Pika-3.5最佳实践</a>
           </li>
         
       </ul>
