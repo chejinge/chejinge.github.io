@@ -69,6 +69,66 @@
       <div class="outer">
         <section id="main">
   
+    <article id="post-pika快慢命令分离" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+  <div class="article-meta">
+    <a href="/2024/06/06/pika%E5%BF%AB%E6%85%A2%E5%91%BD%E4%BB%A4%E5%88%86%E7%A6%BB/" class="article-date">
+  <time class="dt-published" datetime="2024-06-06T10:37:25.000Z" itemprop="datePublished">2024-06-06</time>
+</a>
+    
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="p-name article-title" href="/2024/06/06/pika%E5%BF%AB%E6%85%A2%E5%91%BD%E4%BB%A4%E5%88%86%E7%A6%BB/">pika快慢命令分离</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="e-content article-entry" itemprop="articleBody">
+      
+        <h2 id="目前流程"><a href="#目前流程" class="headerlink" title="目前流程"></a>目前流程</h2><p>每一个 Redis-cli 和 Proxy 建立连接之后，都会产生一个 Session对象，Session 中 loopRead 负责从连接中读取命令，当获取到命令之后，会根据命令的不同使用三种分派方式。第一种是用命令的 key 做hash运算得到一个SlotID，比如Get、Set等等命令均使用这种方式。第二种是直接传入SlotID，比如Info、Ping命令，对当前时间戳做一个hash运算然后得到一个SlotID。第三种是直接使用固定的Server地址，同样是Info、Ping命令，需要传入一个地址参数。</p>
+<pre><code>无论使用哪种方式，最终都是从对应Sever的连接池中得到一个BackendConn。获取连接的方式是使用一个随机数遍历最大连接数parallel次，只要有一个连接有效，立即返回。
+</code></pre>
+<p><img src="/../images/%E5%BF%AB%E6%85%A2%E5%91%BD%E4%BB%A4/parallel.png" alt="parallel"></p>
+<p>存在的问题就是，快命令Request和慢命令Request没有做区分，如果快慢命令push进同一个BackendConn中，其在task中是顺序那么会因为慢命令的耗时导致慢命令也超时。</p>
+<p><img src="/../images/%E5%BF%AB%E6%85%A2%E5%91%BD%E4%BB%A4/%E9%80%BB%E8%BE%911.png" alt="逻辑1"></p>
+<p>改进策略：</p>
+<pre><code>让快慢命令进入不同的连接，那么在连接内就不会因为慢命令而阻塞住快命令。
+
+所以通过在从连接池中获得BackendConn的时候，根据命令的不同返回不同种类的“快慢连接”，从而达到快慢命令不阻塞在同一个Channel中，就可以实现在Codis层的快慢命令分离。
+</code></pre>
+<p><img src="/../images/%E5%BF%AB%E6%85%A2%E5%91%BD%E4%BB%A4/%E9%80%BB%E8%BE%912.png" alt="逻辑2"></p>
+<p>这种策略能改善由于一个Session发出的慢命令阻塞了其他Session的快命令情况。	</p>
+<h2 id="具体实现"><a href="#具体实现" class="headerlink" title="具体实现"></a>具体实现</h2><p>1、如何区分快慢命令：每一个命令都有一个Flag成员，代表了一个命令的特性，可以增加一位作为快慢命令的标识。并且提供接口返回一个bool类型表示是否为快慢命令。另外还需更改proxy读取配置文件时要修改命令的Flag。</p>
+<p><img src="/../images/%E5%BF%AB%E6%85%A2%E5%91%BD%E4%BB%A4/%E9%80%BB%E8%BE%913.png" alt="逻辑3"></p>
+<p>2、如何获取不同连接，从连接池中获取一条连接的接口如下</p>
+<p><img src="/../images/%E5%BF%AB%E6%85%A2%E5%91%BD%E4%BB%A4/%E9%80%BB%E8%BE%914.png" alt="逻辑4"></p>
+<p>如果在配置文件中，一个db的连接数为1，那么不需要快慢命令分离，所有分发到该db的命令都会走这一条连接；当配置文件中db的连接数不是1，那么可以添加一个 q 代表其快块命令连接的数量。这样在外部获取连接的时候，如果是快命令，那么从连接数n的前 q 个连接中返回一条，如果是慢命令，那么从连接数n的后n - q个连接中返回一条。更改BackendConn函数的参数，接受一个bool类型，根据该值判断是该返回快连接还是慢连接。</p>
+<pre><code>另外，除了可以通过配置文件和config命令设置快慢命令外，还提供了自动设置快慢命令功能，通过开一个线程不断的统计命令的执行时间，如果超过了一个阈值（比如打印慢日志的时间阈值），就将其自动设置为慢命令，超过一定时间没有超时，就清除其慢命令标志。
+
+在Codis层做了快慢命令分离后，通过不同连接发送给Pika的一批命令要么全是快命令，要么全是慢命令。然后在将命令送往线程池的时候进行判断，快命令 Batch push 快线程池，慢命令 Batch push 慢线程池，将快慢命令分开执行。
+</code></pre>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://example.com/2024/06/06/pika%E5%BF%AB%E6%85%A2%E5%91%BD%E4%BB%A4%E5%88%86%E7%A6%BB/" data-id="clx3747f800008rtb1jloeqe4" data-title="pika快慢命令分离" class="article-share-link"><span class="fa fa-share">Share</span></a>
+      
+      
+      
+    </footer>
+  </div>
+  
+</article>
+
+
+
+  
     <article id="rocksdb-Rocksdb-Blockcache源码学习" class="h-entry article article-type-rocksdb" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
   <div class="article-meta">
     <a href="/2024/04/30/Rocksdb-Blockcache%E6%BA%90%E7%A0%81%E5%AD%A6%E4%B9%A0/" class="article-date">
@@ -468,49 +528,6 @@
 
 
   
-    <article id="post-Pika-全量复制" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
-  <div class="article-meta">
-    <a href="/2023/12/10/Pika-%E5%85%A8%E9%87%8F%E5%A4%8D%E5%88%B6/" class="article-date">
-  <time class="dt-published" datetime="2023-12-10T00:25:28.000Z" itemprop="datePublished">2023-12-10</time>
-</a>
-    
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="p-name article-title" href="/2023/12/10/Pika-%E5%85%A8%E9%87%8F%E5%A4%8D%E5%88%B6/">Pika 全量复制</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="e-content article-entry" itemprop="articleBody">
-      
-        <h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p><strong>pika主从节点进行全量数据同步通过rsync命令实现。rsync命令需要单独启动一个进程来实现数据传输，在pika进程重启&#x2F;退出或者机器故障等情况下与pika进程不同步，使用过程中也发现rsync进程异常退出无法定位原因。因此计划将dump文件传输的功能进行集成到pika进程中，使用单独线程进行处理。</strong><br><strong>团队进行了相关的调研，包括openrsync工具，braft中 install snapshot的逻辑以及基于pika的网络pink自己实现文件传输的功能。综合考虑之后，考虑基于pink网络库实现文件传输。新的文件传输方式需实现：1.支持限速策略且可以动态调整门限值。2.传输性能与之前的rsync方式相当。3. 保证主从复制过程在出现网络丢包，重传，主从节点宕机等异常情况下能正常处理。</strong></p>
-        
-          <p class="article-more-link">
-            <a href="/2023/12/10/Pika-%E5%85%A8%E9%87%8F%E5%A4%8D%E5%88%B6/#more">Read More</a>
-          </p>
-        
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://example.com/2023/12/10/Pika-%E5%85%A8%E9%87%8F%E5%A4%8D%E5%88%B6/" data-id="clv6m1b1p0002b1tbeuop2xq8" data-title="Pika 全量复制" class="article-share-link"><span class="fa fa-share">Share</span></a>
-      
-      
-      
-    </footer>
-  </div>
-  
-</article>
-
-
-
-  
 
 
   <nav id="page-nav">
@@ -534,7 +551,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Archives</h3>
     <div class="widget">
-      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2024/04/">April 2024</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2023/12/">December 2023</a></li></ul>
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2024/06/">June 2024</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2024/04/">April 2024</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2023/12/">December 2023</a></li></ul>
     </div>
   </div>
 
@@ -545,6 +562,10 @@
     <h3 class="widget-title">Recent Posts</h3>
     <div class="widget">
       <ul>
+        
+          <li>
+            <a href="/2024/06/06/pika%E5%BF%AB%E6%85%A2%E5%91%BD%E4%BB%A4%E5%88%86%E7%A6%BB/">pika快慢命令分离</a>
+          </li>
         
           <li>
             <a href="/2024/04/30/Rocksdb-Blockcache%E6%BA%90%E7%A0%81%E5%AD%A6%E4%B9%A0/">Rocksdb Blockcache学习</a>
@@ -560,10 +581,6 @@
         
           <li>
             <a href="/2024/04/28/git/">git教程</a>
-          </li>
-        
-          <li>
-            <a href="/2024/04/28/failover/">failover</a>
           </li>
         
       </ul>
