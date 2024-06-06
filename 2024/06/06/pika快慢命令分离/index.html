@@ -19,7 +19,7 @@
 <meta property="og:image" content="http://example.com/images/%E5%BF%AB%E6%85%A2%E5%91%BD%E4%BB%A4/%E9%80%BB%E8%BE%913.png">
 <meta property="og:image" content="http://example.com/images/%E5%BF%AB%E6%85%A2%E5%91%BD%E4%BB%A4/%E9%80%BB%E8%BE%914.png">
 <meta property="article:published_time" content="2024-06-06T10:37:25.000Z">
-<meta property="article:modified_time" content="2024-06-06T11:49:31.767Z">
+<meta property="article:modified_time" content="2024-06-06T11:53:22.100Z">
 <meta property="article:author" content="John Doe">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:image" content="http://example.com/images/%E5%BF%AB%E6%85%A2%E5%91%BD%E4%BB%A4/parallel.png">
@@ -100,6 +100,7 @@
     <div class="e-content article-entry" itemprop="articleBody">
       
         <h2 id="目前流程"><a href="#目前流程" class="headerlink" title="目前流程"></a>目前流程</h2><p>每一个 Redis-cli 和 Proxy 建立连接之后，都会产生一个 Session对象，Session 中 loopRead 负责从连接中读取命令，当获取到命令之后，会根据命令的不同使用三种分派方式。第一种是用命令的 key 做hash运算得到一个SlotID，比如Get、Set等等命令均使用这种方式。第二种是直接传入SlotID，比如Info、Ping命令，对当前时间戳做一个hash运算然后得到一个SlotID。第三种是直接使用固定的Server地址，同样是Info、Ping命令，需要传入一个地址参数。</p>
+<span id="more"></span>
 <pre><code>无论使用哪种方式，最终都是从对应Sever的连接池中得到一个BackendConn。获取连接的方式是使用一个随机数遍历最大连接数parallel次，只要有一个连接有效，立即返回。
 </code></pre>
 <p><img src="/../images/%E5%BF%AB%E6%85%A2%E5%91%BD%E4%BB%A4/parallel.png" alt="parallel"></p>
